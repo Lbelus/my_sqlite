@@ -9,30 +9,11 @@ class InvertedIndex
         update_index(id, txt)
     end
 
-    def search(value)
-        id_list = @index[value]
-        return [] unless id_list
-        id_list.map { |id| @data[id] }
-    end
-
-
-    def get_db(from, to)
-        matrix = []
-
-        @data.each.with_index do |elem, index|
-            row = []
-            values = elem[1].split(',')
-            for val in from..to do
-                row[val] = values[val]
-            end
-            matrix << row
-        end
-        p matrix
-    end
-
-    def get_column_id(value)
-        column_lists = @data['0'].split(',')
-        col_id = column_lists.index(value)
+    def insert_hash(data)
+        id = new_id
+        txt = data.values.join(',')
+        @data[id] = txt
+        update_index(id, txt)
     end
 
     def update_index(id, txt)
@@ -42,4 +23,47 @@ class InvertedIndex
             @index[value] << id
         end
     end
+
+    def new_id
+        id = (@data.keys.map(&:to_i).max + 1).to_s
+    end
+
+    def get_column_id(value)
+        column_lists = @data['0'].split(',')
+        col_id = column_lists.index(value)
+    end
+
+    def get_db
+        matrix = []
+        index = 0
+        @data.each do |elem|
+            row = []
+            row = elem[1].split(',')
+            matrix << row
+        end
+       matrix
+    end
+
+    def search(value)
+        id_list = @index[value]
+        return [] unless id_list
+        id_list.map { |id| @data[id] }
+    end
+
+    def from_to(from, to)
+        matrix = []
+        index = 0
+        @data.each do |elem|
+            row = []
+            values = elem[1].split(',')
+            for val in from..to do
+                row[index] = values[val]
+                index += 1
+            end
+            index = 0
+            matrix << row
+        end
+        matrix
+    end
+
 end
