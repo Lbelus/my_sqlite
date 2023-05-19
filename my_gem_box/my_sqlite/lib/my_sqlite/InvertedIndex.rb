@@ -9,8 +9,11 @@ class InvertedIndex
         update_index(id, txt)
     end
 
-    def insert_hash(data)
-        id = new_id
+    def insert_hash(data, is_id = false)
+        if is_id
+            id = is_id
+        else id = new_id
+        end
         txt = data.values.join(',')
         @data[id] = txt
         update_index(id, txt)
@@ -33,6 +36,62 @@ class InvertedIndex
         col_id = column_lists.index(value)
     end
 
+    def key_exist?(id)
+        result = @data.has_key?(id)        
+    end
+
+    def delete_entry(id)
+        data = @data[id].split(',')
+        data.each do |value|
+            @index[value].delete(id);
+            if(@index[value] == [])
+                @index.delete(value)
+            end
+        end
+        @data.delete(id)
+    end
+
+    def modify_entry(new_data, id)
+        id = id.to_s
+        delete_entry(id)
+        insert_hash(new_data, id)
+    end
+
+    def create_new_data(data, id)
+      headers = @data['0'].split(',')
+      old_data = @data[id].split(',')
+      new_data = {}
+      new_headers = data.keys
+      new_values = data.values
+      jndex = 0
+      headers.each.with_index do |header, index|
+        if header == new_headers[jndex]
+          new_data[header] = new_values[jndex]
+          jndex += 1
+        else
+        new_data[header] = old_data[index]
+        end
+      end
+      new_data
+    end
+
+    def update_value(data)
+        values = data.values
+        id = values[0].to_s
+        if key_exist?(id)
+          modify_entry(data, id)
+        end
+    end
+
+    def modify_column(data, id_list)
+        new_list = id_list.dup
+        new_list.each do |id|
+            new_data = create_new_data(data, id)
+            modify_entry(new_data, id)
+        end
+      @index  
+    end
+
     def get_db
         matrix = []
         index = 0
@@ -42,6 +101,10 @@ class InvertedIndex
             matrix << row
         end
        matrix
+    end
+
+    def get_id_list(value)
+      id_list = @index[value]
     end
 
     def search(value)
@@ -65,5 +128,4 @@ class InvertedIndex
         end
         matrix
     end
-
 end

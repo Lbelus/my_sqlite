@@ -2,16 +2,21 @@ require 'csv'
 
 class MySqliteRequest 
 
-    attr_accessor :db, :col_id, :join, :order, :insert, :data
+    attr_accessor :db, :col_id, :join, :order, :insert, :data, :update, :delete, :set, :searched_value, :values
 
-    def initialize(db = nil, col_id = nil, join = false, order = false, insert = false, data = nil)
+    def initialize(db = nil, col_id = nil, searched_value = nil, join = false, order = false, insert = false, data = nil, update = false, delete = false, set = false, values = false)
         @db = db
         @col_id = col_id
+        @searched_value = searched_value
         @join = join
         @insert = insert
         @data = data
+        @update = update
+        @delete = delete
+        @set = set
+        @values = values
     end
-# create subclass to that act a setter for class to get.  
+# must : create subclass to that act a setter for class to get.  
     def from(table_name)
         @db = set_table(table_name)
         self
@@ -23,7 +28,8 @@ class MySqliteRequest
     end
 
     def where(column_name, criteria)
-         @db = @db.search(criteria)
+         @searched_value = criteria
+         db = @db.search(criteria)
         self
     end
 
@@ -41,7 +47,7 @@ class MySqliteRequest
 
             merge = db_a.zip(db_b).map(&:flatten)
             merge = convert_to_csv(merge)
-            @join = set_table(merge, false)
+            p @join = set_table(merge, false)
             # @join = false
         # end
         self
@@ -90,39 +96,63 @@ class MySqliteRequest
             # @db = set_table(db_csv, false)
             # @insert = false
         end
-
         self
     end
 
     def values(data)
+        if @values == false
+          @values = true
+        end
         @data = data
         # p @data
         self
     end
 
-    # def update(table_name)
+    def update(table_name)
+    @db = set_table(table_name)
+    if @update == false
+        @update = true
+    end
+    self
+    end
 
-    # end
-
-    # def set(data)
-
-    # end
-
-    # def delete
-
-    # end
-    def run
-
-        # if @insert == true
-            @db.insert_hash(@data)
-        # end
-        # p @db
-        # @db.each do |elem|
-        #     p elem.split(',')[@col_id]
-        # end
+    def set(data)
+      if @set == false
+        @set = true
+      end
+      @data = data
         self
     end
 
+    def delete
+        if @delete == false
+            @delete = true
+        end
+        self
+    end
+
+    def run
+        if @insert == true
+          @db.insert_hash(@data)
+        end
+        if @values == true 
+          @db.update_value(@data)
+        end
+        if @set == true
+          p @db
+          id_list = @db.get_id_list(@searched_value)
+          @db.modify_column(@data, id_list)
+        end
+        if @select == true 
+            @db.each do |elem|
+              elem.split(',')[@col_id]
+            end
+        else 
+          p @db
+        end
+        p "sanity check : #{@db.inspect}"
+    self
+    end
 
     private 
     def set_table(table_name, is_file = true)
@@ -163,7 +193,6 @@ class MySqliteRequest
         db
     end
 
-
     def convert_to_csv(matrix)
         csv_table = CSV.generate do |csv|
                 matrix.each do |row|
@@ -173,9 +202,7 @@ class MySqliteRequest
         end
         csv_table
     end
-
 end
-
 
 require_relative 'InvertedIndex'
 # @db = InvertedIndex.new
@@ -187,20 +214,31 @@ require_relative 'InvertedIndex'
 # return @db
 
 request = MySqliteRequest.new
-# request = request.from('data.csv')
-# request = request.select('first_name').where('job', 'Engineer').run
+# request = request.from('data.csv').join('last_name', 'data.csv', 'age')
+# request = request.from('data.csv').order(:asc,'job').run
+ request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
-# request = request.order(:asc,'job')
-data = {
-  'index' => 17,
-  'first_name' => 'Peter',
-  'last_name' => 'Parker',
-  'job' => 'Photographer',
-  'age' => 23
+insert_data = {
+   'index' => 17,
+   'first_name' => 'Peter',
+   'last_name' => 'Parker',
+   'job' => 'Photographer',
+   'age' => 23
 }
-request = request.insert('data.csv').values(data).run
 
+update_data = {
+   'index' => 17,
+   'first_name' => 'Spooder',
+   'last_name' => 'Man',
+   'job' => 'ceiling crawler'
+}
 
+set_data = {
+    'job' => "пенсионер",
+}
 
-
-
+p "insert data"
+#request = request.insert('data.csv').values(insert_data).run
+p "update data"
+#request = request.update('data.csv').values(update_data).run
+#  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
