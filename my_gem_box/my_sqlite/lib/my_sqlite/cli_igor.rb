@@ -1,4 +1,4 @@
-require_relative 'my_sqlite_request.rb'
+#require_relative 'my_sqlite_request.rb'
 
 class Query
     # @param {String} command
@@ -16,6 +16,9 @@ class Query
         @join_cond = join_cond
     end
 end
+
+
+module QueryFunc 
 
 def iskeyword?(str)
     cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE']
@@ -142,5 +145,6 @@ def run_cli()
     end
 end
 
+end
 
-p run_cli()
+#p run_cli()

@@ -35,16 +35,14 @@ class MySqliteRequest < MySqliteGetter
 
     attr_accessor :options
 
-    def initialize(options = nil)
+    def initialize(query = nil)
       super
-      
+      @options = object_to_hash(query) 
     end
 
-    def test_from(table_name)
+    def test_from(table_name = 'data.csv')
       db = set_table(table_name)
       set_from(db)
-      dbt = get_from
-      object_to_hash(dbt)
       self
     end
 
@@ -234,15 +232,9 @@ class MySqliteRequest < MySqliteGetter
     end
 end
 
-require_relative 'InvertedIndex'
-# @db = InvertedIndex.new
-# CSV.foreach('table_name', headers: true) do |row|
-#     id = row['index']
-#     text = row.to_s
-#     @db.insert(id, text)
-# end
-# return @db
 
+require_relative 'InvertedIndex'
+=begin
 request = MySqliteRequest.new
   request.from('data.csv')
 # request = request.from('data.csv').join('last_name', 'data.csv', 'age')
@@ -273,3 +265,5 @@ p "insert data"
 p "update data"
 #request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
+=end
+
