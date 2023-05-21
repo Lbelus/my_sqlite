@@ -1,27 +1,56 @@
 require 'csv'
 
-class MySqliteRequest 
+class MySqliteGetter
 
-    attr_accessor :db, :col_id, :join, :order, :insert, :data, :update, :delete, :set, :searched_value, :values
+  attr_reader :options, :db
 
-    def initialize(db = nil, col_id = nil, searched_value = nil, join = false, order = false, insert = false, data = nil, update = false, delete = false, set = false, values = false)
-        @db = db
-        @col_id = col_id
-        @searched_value = searched_value
-        @join = join
-        @insert = insert
-        @data = data
-        @update = update
-        @delete = delete
-        @set = set
-        @values = values
+  def initialize(db = nil)
+    @db = db
+  end
+
+  def get_from
+    @db
+  end
+
+end
+
+module MySqliteSetter
+
+    def set_from(db)
+      @db = db
     end
-# must : create subclass to that act a setter for class to get.  
-    def from(table_name)
-        @db = set_table(table_name)
-        self
+    
+    def object_to_hash(obj)
+      hash = {}
+      obj.instance_variables.each do |var|
+        hash[var[1..-1]] = obj.instance_variable_get(var)
+      end
+      p hash
+    end
+end
+
+
+class MySqliteRequest < MySqliteGetter
+  include MySqliteSetter
+
+    attr_accessor :options
+
+    def initialize(options = nil)
+      super
+      
     end
 
+    def test_from(table_name)
+      db = set_table(table_name)
+      set_from(db)
+      dbt = get_from
+      object_to_hash(dbt)
+      self
+    end
+
+
+
+=begin
     def select(column_name)
         @col_id = @db.get_column_id(column_name)
         self
@@ -153,6 +182,7 @@ class MySqliteRequest
         p "sanity check : #{@db.inspect}"
     self
     end
+=end
 
     private 
     def set_table(table_name, is_file = true)
@@ -214,9 +244,10 @@ require_relative 'InvertedIndex'
 # return @db
 
 request = MySqliteRequest.new
+  request.from('data.csv')
 # request = request.from('data.csv').join('last_name', 'data.csv', 'age')
 # request = request.from('data.csv').order(:asc,'job').run
- request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
+# request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
 insert_data = {
    'index' => 17,
