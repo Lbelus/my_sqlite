@@ -1,16 +1,35 @@
+require_relative 'my_sqlite/cli_igor'
 
-class MySqlite
-  def self.my_sqlite(filelist = nil)
-    cli = Cli.new(filelist)
-    cli.start
+class MySqliteInstance
+  include QueryFunc
+
+  def _execute_(object, hash)
+    hash.each do |method, argument|
+    if object.respond_to?(method)
+        object.send(method, argument)
+      else
+        p "#{method} does not belong to my_sqlite"
+      end
+    end
   end
+
+  def instanciation(database_name = nil)
+     result = true
+     while result
+       result = run_cli
+       request = MySqliteRequest.new(result)
+       _execute_(request, request.options)
+     end
+  end
+
 end
 
-def my_sqlite_fn(filelist)
-  MySqlite.my_sqlite(filelist)
+def my_sqlite(database_name = nil)
+  sqlite_object = MySqliteInstance.new
+  sqlite_object.instanciation
 end
 
-require_relative 'my_sqlite/Cli'
-require_relative 'my_sqlite/LinkedList'
+require_relative 'my_sqlite/my_sqlite_request'
+#require_relative 'InvertedIndex'
 
-my_sqlite_fn(ARGV)
+my_sqlite
