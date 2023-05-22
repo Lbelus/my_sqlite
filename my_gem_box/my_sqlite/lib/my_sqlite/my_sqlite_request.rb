@@ -40,9 +40,10 @@ class MySqliteRequest < MySqliteGetter
       @options = object_to_hash(query) 
     end
 
-    def test_from(table_name = 'data.csv')
+    def table(table_name = 'data.csv')
       db = set_table(table_name)
-      set_from(db)
+      p set_from(db)
+      p "here"
       self
     end
 

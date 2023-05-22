@@ -3,11 +3,22 @@ require_relative 'my_sqlite/cli_igor'
 class MySqliteInstance
   include QueryFunc
 
+  def _execute_(object, hash)
+    hash.each do |method, argument|
+    if object.respond_to?(method)
+        object.send(method, argument)
+      else
+        p "#{method} does not belong to my_sqlite"
+      end
+    end
+  end
+
   def instanciation(database_name = nil)
      result = true
      while result
        result = run_cli
        request = MySqliteRequest.new(result)
+       _execute_(request, request.options)
      end
   end
 
