@@ -2,14 +2,23 @@ require 'csv'
 
 class MySqliteGetter
 
-  attr_reader :options, :db
+  attr_reader  :options, :db, :col_ids, :criterias
 
-  def initialize(db = nil)
+  def initialize(options = nil, db = nil, col_ids = [], criterias = {})
+    @options = options
     @db = db
+    @col_ids = col_ids
+    @criterias = criterias
   end
 
   def get_from
     @db
+  end
+
+  def get_where
+    value = nil
+    #db = @db.search(value)
+    #need to get row ids at col containing values
   end
 
 end
@@ -20,47 +29,54 @@ module MySqliteSetter
       @db = db
     end
     
+    def set_select(column_list = [])
+        column_list.each do |column|
+          @col_id <<  @db.get_column_id(column)
+        end
+    end
+
+    def set_where(column_name, criteria)  
+        criterias[column_name] = criteria
+    end
+
     def object_to_hash(obj)
       hash = {}
       obj.instance_variables.each do |var|
         hash[var[1..-1]] = obj.instance_variable_get(var)
       end
-      p hash
+      hash
     end
+
 end
 
 
 class MySqliteRequest < MySqliteGetter
   include MySqliteSetter
 
-    attr_accessor :options
 
     def initialize(query = nil)
       super
       @options = object_to_hash(query) 
     end
 
-    def table(table_name = 'data.csv')
+    def from(table_name = nil)
       db = set_table(table_name)
-      p set_from(db)
-      p "here"
+      set_from(db)
       self
     end
 
-
-
-=begin
-    def select(column_name)
-        @col_id = @db.get_column_id(column_name)
-        self
+    def select(column_list = [])
+      set_select(column_list)
+      self
     end
 
     def where(column_name, criteria)
-         @searched_value = criteria
+         set_where(column_name, criteria) 
          db = @db.search(criteria)
         self
     end
 
+=begin
     def join(column_on_db_a, filename_db_b, column_on_db_b)
         # if @join == false
         #     @join = true

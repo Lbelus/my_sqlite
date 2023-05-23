@@ -4,21 +4,21 @@ class Query
     # @param {String} command
     # @param {String[]} columns
     # @param {String} table
-    # @param {String[][]} where_cond
-    # @param {String[][]} join_cond
-    attr_accessor :command, :columns, :table, :where_cond, :join_cond    
+    # @param {String[][]} where
+    # @param {String[][]} join
+    attr_accessor :command, :columns, :from, :where, :join    
     
-    def initialize(command = nil, columns = nil, table = nil, where_cond = nil, join_cond = nil)
+    def initialize(command = nil, columns = nil, from = nil, where = nil, join = nil)
         @command = command
         @columns = columns
-        @table = table
-        @where_cond = where_cond
-        @join_cond = join_cond
+        @from = from
+        @where = where
+        @join = join
     end
 end
 
 
-module QueryFunc 
+module QueryMethods 
 
 def iskeyword?(str)
     cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE']
