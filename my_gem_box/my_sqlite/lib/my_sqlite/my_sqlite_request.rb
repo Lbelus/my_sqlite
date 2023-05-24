@@ -2,13 +2,14 @@ require 'csv'
 
 class MySqliteGetter
 
-  attr_reader  :options, :db, :col_ids, :criterias
+  attr_reader  :options, :db, :col_ids, :criterias, :result
 
-  def initialize(options = nil, db = nil, col_ids = [], criterias = {})
+  def initialize(options = nil, db = nil, col_ids = [], criterias = {}, result = nil)
     @options = options
     @db = db
     @col_ids = col_ids
     @criterias = criterias
+    @result = result
   end
 
   def get_from
@@ -16,7 +17,7 @@ class MySqliteGetter
   end
 
   def get_where
-    value = nil
+	value = nil
     #db = @db.search(value)
     #need to get row ids at col containing values
   end
@@ -25,13 +26,13 @@ end
 
 module MySqliteSetter
 
-    def set_from(db)
-      @db = db
+	def set_from(db)
+    	@db = db
     end
     
     def set_select(column_list = [])
-        column_list.each do |column|
-          @col_id <<  @db.get_column_id(column)
+    	column_list.each do |column|
+    	@col_id <<  @db.get_column_id(column)
         end
     end
 
@@ -40,164 +41,41 @@ module MySqliteSetter
     end
 
     def object_to_hash(obj)
-      hash = {}
-      obj.instance_variables.each do |var|
-        hash[var[1..-1]] = obj.instance_variable_get(var)
-      end
-      hash
+    	hash = {}
+    	obj.instance_variables.each do |var|
+    		hash[var[1..-1]] = obj.instance_variable_get(var)
+      	end
+      	hash
     end
 
-end
+    def set_join(column_on_db_a, filename_db_b, column_on_db_b)
+        id_a = @db.get_column_id(column_on_db_a)
+        db_a = @db.from_to(0 , id_a )
+        id_a += 1
 
+        db_b = set_table(filename_db_b)
+        id_b = db_b.get_column_id(column_on_db_b)
+        db_b = db_b.from_to(id_a , id_b)
 
-class MySqliteRequest < MySqliteGetter
-  include MySqliteSetter
-
-
-    def initialize(query = nil)
-      super
-      @options = object_to_hash(query) 
+        merge = db_a.zip(db_b).ma p(&:flatten)
+        merge = convert_to_csv(merge)
+        @result = set_table(merge, false)
     end
-
-    def from(table_name = nil)
-      db = set_table(table_name)
-      set_from(db)
-      self
-    end
-
-    def select(column_list = [])
-      set_select(column_list)
-      self
-    end
-
-    def where(column_name, criteria)
-         set_where(column_name, criteria) 
-         db = @db.search(criteria)
-        self
-    end
-
-=begin
-    def join(column_on_db_a, filename_db_b, column_on_db_b)
-        # if @join == false
-        #     @join = true
-        # else
-            id_a = @db.get_column_id(column_on_db_a)
-            db_a = @db.from_to(0 , id_a )
-            id_a += 1
-
-            db_b = set_table(filename_db_b)
-            id_b = db_b.get_column_id(column_on_db_b)
-            db_b = db_b.from_to(id_a , id_b)
-
-            merge = db_a.zip(db_b).map(&:flatten)
-            merge = convert_to_csv(merge)
-            p @join = set_table(merge, false)
-            # @join = false
-        # end
-        self
-    end
-
-    def order(order, column_name)
-        # if @order == false
-        #     @order = true
-        # else
-            col_id = @db.get_column_id(column_name)
-            db = @db.get_db
-            headers = db[0]
-            db.shift
-            case order
-            when :asc
-                db.sort_by! { |row| row[col_id] }
-            when :desc
-                db.sort_by! { |row| row[col_id] }.reverse!
-            end
-            db.unshift(headers)
-            db_csv = convert_to_csv(db)
-            @db = set_table(db_csv, false)
-            # @order = false
-        # end
-        self
-    end
-
-    def insert(table_name)
-        @db = set_table(table_name)
-        if @insert == false
-            @insert = true
-        # else
-        # code is working but it's not exactly what the upskill specs requires
-            # db = @db.get_db
-            # insert_db = []
-            # CSV.foreach(table_name, headers: true) do |row|
-            #     id = row['index']
-            #     text = row.to_s.split(',')
-            #     insert_db << text
-            # end
-            # insert_db.shift
-            # insert_db.each do |elem|
-            #     db << elem
-            # end
-            # db_csv = convert_to_csv(db)
-            # @db = set_table(db_csv, false)
-            # @insert = false
+    def set_order(order, column_name)
+        col_id = @db.get_column_id(column_name)
+        db = @db.get_db
+        headers = db[0]
+        db.shift
+        case order
+        when :asc
+            db.sort_by! { |row| row[col_id] }
+        when :desc
+            db.sort_by! { |row| row[col_id] }.reverse!
         end
-        self
+        db.unshift(headers)
+        db_csv = convert_to_csv(db)
+        @result = set_table(db_csv, false)
     end
-
-    def values(data)
-        if @values == false
-          @values = true
-        end
-        @data = data
-        # p @data
-        self
-    end
-
-    def update(table_name)
-    @db = set_table(table_name)
-    if @update == false
-        @update = true
-    end
-    self
-    end
-
-    def set(data)
-      if @set == false
-        @set = true
-      end
-      @data = data
-        self
-    end
-
-    def delete
-        if @delete == false
-            @delete = true
-        end
-        self
-    end
-
-    def run
-        if @insert == true
-          @db.insert_hash(@data)
-        end
-        if @values == true 
-          @db.update_value(@data)
-        end
-        if @set == true
-          p @db
-          id_list = @db.get_id_list(@searched_value)
-          @db.modify_column(@data, id_list)
-        end
-        if @select == true 
-            @db.each do |elem|
-              elem.split(',')[@col_id]
-            end
-        else 
-          p @db
-        end
-        p "sanity check : #{@db.inspect}"
-    self
-    end
-=end
 
     private 
     def set_table(table_name, is_file = true)
@@ -247,10 +125,189 @@ class MySqliteRequest < MySqliteGetter
         end
         csv_table
     end
+
 end
 
 
-require_relative 'InvertedIndex'
+class MySqliteRequest < MySqliteGetter
+	include MySqliteSetter
+
+	attr_accessor :state
+
+    def initialize(query = nil)
+    	super
+		if query 
+    		@options = object_to_hash(query)
+		else
+			@options = Query.new
+		end
+		@state = 0 
+    end
+	
+	def state?
+		!@state
+	end
+	
+    def from(table_name = nil)
+		if state?
+			if !options.from
+				options.from = table_name
+			end
+        else
+            db = set_table(table_name)
+            set_from(db)
+		end
+    	self
+    end
+
+    def select(column_list = [])
+		if state?
+			if !options.command
+				options.command = column_list
+			end
+        else
+            set_select(column_list)
+		end    	
+    	self
+    end
+
+    def where(column_name, criteria)
+		if state?
+			if !options.where
+                args = []
+                args << column_name
+                args << criteria
+                options.where << args
+			end
+        else
+            set_where(column_name, criteria) 
+            db = @db.search(criteria)
+        end
+        self
+    end
+
+    def join(column_on_db_a, filename_db_b, column_on_db_b)
+        if state?
+			if !options.join
+                options.join = [column_on_db_a, filename_db_b, column_on_db_b]
+            end
+        else
+            set_join(column_on_db_a, filename_db_b, column_on_db_b)
+        end
+        self
+    end
+
+    def order(order, column_name)
+        if state?
+			if !options.order
+                options.order
+            end
+        else
+            set_order(order, column_name)
+        end
+        self
+    end
+
+    def insert(table_name) 
+        if state?
+			if !options.insert
+                options.insert
+            end
+        else
+            @db = set_table(table_name)
+        # code is working but it's not exactly what the upskill specs requires
+            # db = @db.get_db
+            # insert_db = []
+            # CSV.foreach(table_name, headers: true) do |row|
+            #     id = row['index']
+            #     text = row.to_s.split(',')
+            #     insert_db << text
+            # end
+            # insert_db.shift
+            # insert_db.each do |elem|
+            #     db << elem
+            # end
+            # db_csv = convert_to_csv(db)
+            # @db = set_table(db_csv, false)
+            # @insert = false
+        end
+        self
+    end
+
+    def values(data)
+        if state?
+			if !options.insert
+                options.insert
+            end
+        else
+            @data = data
+        end
+        self
+    end
+
+    def update(table_name)
+        if state?
+			if !options.update
+                options.update
+            end
+        else
+            @db = set_table(table_name)
+        end
+    self
+    end
+
+    def set(data)
+        if state?
+			if !options.set
+                options.set
+            end
+        else
+            @data = data
+        end
+        self
+    end
+
+    def delete
+        if state?
+			if !options.delete
+                options.delete
+            end
+        else
+            
+        end
+        self
+    end
+
+    def run
+        # if @insert == true
+        #   @db.insert_hash(@data)
+        # end
+        # if @values == true 
+        #   @db.update_value(@data)
+        # end
+        # if @set == true
+        #   p @db
+        #   id_list = @db.get_id_list(@searched_value)
+        #   @db.modify_column(@data, id_list)
+        # end
+        # if @select == true 
+        #     @db.each do |elem|
+        #       elem.split(',')[@col_id]
+        #     end
+        # else 
+        #   p @db
+        # end
+        # p "sanity check : #{@db.inspect}"
+    self
+    end
+
+test
+
+end
+
+
+require_relative 'Inverted_Index'
+require_relative 'cli'
 =begin
 request = MySqliteRequest.new
   request.from('data.csv')

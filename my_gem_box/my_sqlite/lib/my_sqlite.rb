@@ -1,9 +1,10 @@
-require_relative 'my_sqlite/cli_igor'
+require_relative 'my_sqlite/cli'
 
 class MySqliteInstance
-  include QueryFunc
+  include QueryMethods
 
   def _execute_(object, hash)
+    p object, hash
     hash.each do |method, argument|
     if object.respond_to?(method)
         object.send(method, argument)

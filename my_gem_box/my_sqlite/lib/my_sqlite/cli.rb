@@ -112,7 +112,7 @@ def get_query(query)
         where_cndt.push(query[where_loc + 1])
         where_cndt.push(query[where_loc + 2])
         where_cndt.push(query[where_loc + 3])
-        q.where_cond = where_cndt
+        q.where = where_cndt
     end
     q
 end
