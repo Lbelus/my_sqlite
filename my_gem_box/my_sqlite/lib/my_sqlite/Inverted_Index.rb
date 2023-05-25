@@ -21,7 +21,8 @@ class InvertedIndex
     def insert_hash(data, is_id = false)
         if is_id
             id = is_id
-        else id = new_id
+        else 
+            id = new_id
         end
         txt = data.values.join(',')
         @data[id] = txt
@@ -157,6 +158,16 @@ class InvertedIndex
         id_list.map { |id| @data[id] }
     end
 
+    def get_row_id(value, column_id)
+        id_list = @index[value]
+        id_list.map do |id| 
+            row = @data[id].split(',')
+            if row[column_id] == value
+                id
+            end
+        end
+        id_list
+    end
     ################ from_to #################
     # Retrieves a submatrix of data entries between given column indices
     # @return {Array}

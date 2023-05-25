@@ -2,26 +2,35 @@ require 'csv'
 
 class MySqliteGetter
 
-  attr_reader  :options, :db, :col_ids, :criterias, :result
+    attr_reader  :options, :db, :data, :col_ids, :row_ids, :result
 
-  def initialize(options = nil, db = nil, col_ids = [], criterias = {}, result = nil)
-    @options = options
-    @db = db
-    @col_ids = col_ids
-    @criterias = criterias
-    @result = result
-  end
+    def initialize(options = nil, db = nil, data = nil, col_ids = [], row_ids = [], result = nil)
+        @options = options
+        @db = db
+        @col_ids = col_ids
+        @criterias = criterias
+        @result = result
+        @row_ids = row_ids
+        @data = data
+    end
 
-  def get_from
-    @db
-  end
+    def get_from
+        @db
+    end
 
-  def get_where
-	value = nil
-    #db = @db.search(value)
-    #need to get row ids at col containing values
-  end
+    def get_where
+	    @row_ids
+    end
 
+    def get_select
+        @col_ids
+    end
+
+    def get_result
+        @result.data.each do |row|
+            p row[1]
+        end
+    end
 end
 
 module MySqliteSetter
@@ -32,20 +41,13 @@ module MySqliteSetter
     
     def set_select(column_list = [])
     	column_list.each do |column|
-    	@col_id <<  @db.get_column_id(column)
+    	    @col_id <<  @db.get_column_id(column)
         end
     end
 
     def set_where(column_name, criteria)  
-        criterias[column_name] = criteria
-    end
-
-    def object_to_hash(obj)
-    	hash = {}
-    	obj.instance_variables.each do |var|
-    		hash[var[1..-1]] = obj.instance_variable_get(var)
-      	end
-      	hash
+        col_id = @db.get_column_id(column_name)
+        @row_ids = @db.get_row_id(criteria, col_id)
     end
 
     def set_join(column_on_db_a, filename_db_b, column_on_db_b)
@@ -61,6 +63,7 @@ module MySqliteSetter
         merge = convert_to_csv(merge)
         @result = set_table(merge, false)
     end
+
     def set_order(order, column_name)
         col_id = @db.get_column_id(column_name)
         db = @db.get_db
@@ -77,7 +80,20 @@ module MySqliteSetter
         @result = set_table(db_csv, false)
     end
 
-    private 
+    private
+
+    def to_array(*args)
+        args
+    end
+
+    def object_to_hash(obj)
+    	hash = {}
+    	obj.instance_variables.each do |var|
+    		hash[var[1..-1]] = obj.instance_variable_get(var)
+      	end
+      	hash
+    end 
+    
     def set_table(table_name, is_file = true)
         db = nil 
         if is_file
@@ -128,7 +144,6 @@ module MySqliteSetter
 
 end
 
-
 class MySqliteRequest < MySqliteGetter
 	include MySqliteSetter
 
@@ -138,21 +153,23 @@ class MySqliteRequest < MySqliteGetter
     	super
 		if query 
     		@options = object_to_hash(query)
+            @state = 1
 		else
 			@options = Query.new
-		end
-		@state = 0 
+            @state = 0 
+        end
     end
 	
+
+
 	def state?
 		!@state
 	end
-	
+
     def from(table_name = nil)
 		if state?
-			if !options.from
-				options.from = table_name
-			end
+            args = to_array(table_name)
+			options.from = args
         else
             db = set_table(table_name)
             set_from(db)
@@ -162,9 +179,8 @@ class MySqliteRequest < MySqliteGetter
 
     def select(column_list = [])
 		if state?
-			if !options.command
-				options.command = column_list
-			end
+            args = to_array(column_list)
+			options.select = args
         else
             set_select(column_list)
 		end    	
@@ -173,24 +189,18 @@ class MySqliteRequest < MySqliteGetter
 
     def where(column_name, criteria)
 		if state?
-			if !options.where
-                args = []
-                args << column_name
-                args << criteria
-                options.where << args
-			end
+            args = to_array(column_name, criteria)
+			options.command << args
         else
             set_where(column_name, criteria) 
-            db = @db.search(criteria)
         end
         self
     end
 
     def join(column_on_db_a, filename_db_b, column_on_db_b)
         if state?
-			if !options.join
-                options.join = [column_on_db_a, filename_db_b, column_on_db_b]
-            end
+            args = to_array(column_on_db_a, filename_db_b, column_on_db_b)
+            options.joins = args
         else
             set_join(column_on_db_a, filename_db_b, column_on_db_b)
         end
@@ -199,9 +209,8 @@ class MySqliteRequest < MySqliteGetter
 
     def order(order, column_name)
         if state?
-			if !options.order
-                options.order
-            end
+            args = to_array(order, column_name)
+            options.order = args
         else
             set_order(order, column_name)
         end
@@ -210,9 +219,8 @@ class MySqliteRequest < MySqliteGetter
 
     def insert(table_name) 
         if state?
-			if !options.insert
-                options.insert
-            end
+            args = to_array(table_name)
+            options.insert = args
         else
             @db = set_table(table_name)
         # code is working but it's not exactly what the upskill specs requires
@@ -236,9 +244,8 @@ class MySqliteRequest < MySqliteGetter
 
     def values(data)
         if state?
-			if !options.insert
-                options.insert
-            end
+            args = to_array(data)
+            options.values = args
         else
             @data = data
         end
@@ -247,9 +254,8 @@ class MySqliteRequest < MySqliteGetter
 
     def update(table_name)
         if state?
-			if !options.update
-                options.update
-            end
+            args = to_array(table_name)
+            options.updates = args
         else
             @db = set_table(table_name)
         end
@@ -258,9 +264,8 @@ class MySqliteRequest < MySqliteGetter
 
     def set(data)
         if state?
-			if !options.set
-                options.set
-            end
+            args = to_array(data)
+            options.set = args
         else
             @data = data
         end
@@ -269,11 +274,7 @@ class MySqliteRequest < MySqliteGetter
 
     def delete
         if state?
-			if !options.delete
-                options.delete
-            end
-        else
-            
+            options.delete = true
         end
         self
     end
@@ -301,20 +302,19 @@ class MySqliteRequest < MySqliteGetter
     self
     end
 
-test
-
 end
 
 
 require_relative 'Inverted_Index'
 require_relative 'cli'
-=begin
+
 request = MySqliteRequest.new
-  request.from('data.csv')
+  request.from('data.csv').where('job', 'Engineer')
 # request = request.from('data.csv').join('last_name', 'data.csv', 'age')
 # request = request.from('data.csv').order(:asc,'job').run
 # request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
+=begin
 insert_data = {
    'index' => 17,
    'first_name' => 'Peter',
