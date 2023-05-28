@@ -7,19 +7,18 @@ class MySqliteGetter
     def initialize(options = nil, db = nil, data = nil, col_ids = [], row_ids = [], result = nil)
         @options = options
         @db = db
-        @col_ids = col_ids
-        @criterias = criterias
-        @result = result
-        @row_ids = row_ids
         @data = data
+        @col_ids = col_ids
+        @row_ids = row_ids
+        @result = result
     end
 
-    def get_from
-        @db
+    def from_select
+        @result = @db.get_db_at(@col_ids, @row_ids)
     end
 
     def get_where
-	    @row_ids
+        @row_ids
     end
 
     def get_select
@@ -27,8 +26,9 @@ class MySqliteGetter
     end
 
     def get_result
-        @result.data.each do |row|
-            p row[1]
+        @result.each do |row|
+            result = row.join(',')
+            p result
         end
     end
 end
@@ -40,8 +40,8 @@ module MySqliteSetter
     end
     
     def set_select(column_list = [])
-    	column_list.each do |column|
-    	    @col_id <<  @db.get_column_id(column)
+        column_list.each do |column|
+    	    @col_ids << @db.get_column_id(column)
         end
     end
 
@@ -59,9 +59,9 @@ module MySqliteSetter
         id_b = db_b.get_column_id(column_on_db_b)
         db_b = db_b.from_to(id_a , id_b)
 
-        merge = db_a.zip(db_b).ma p(&:flatten)
+        merge = db_a.zip(db_b).map(&:flatten)
         merge = convert_to_csv(merge)
-        @result = set_table(merge, false)
+        @db = set_table(merge, false)
     end
 
     def set_order(order, column_name)
@@ -77,7 +77,21 @@ module MySqliteSetter
         end
         db.unshift(headers)
         db_csv = convert_to_csv(db)
-        @result = set_table(db_csv, false)
+        @db = set_table(db_csv, false)
+    end
+
+    def self_execute_(hash)
+        hash.each do |method, argument|
+            if self.respond_to?(method)
+                if method == "where" or method == "order" or method == "join" and argument != nil
+                    self.send(method, *argument[0])
+                  elsif argument != nil
+                    self.send(method, argument)
+                  end
+            else
+            p "#{method} does not belong to my_sqlite"
+            end
+        end
     end
 
     private
@@ -159,38 +173,41 @@ class MySqliteRequest < MySqliteGetter
             @state = 0 
         end
     end
-	
-
 
 	def state?
 		!@state
 	end
 
     def from(table_name = nil)
-		if state?
+		if @state == 0
             args = to_array(table_name)
-			options.from = args
-        else
+			@options.from = args
+			@options.from = table_name
+        elsif state == 1
             db = set_table(table_name)
             set_from(db)
-		end
+        end
     	self
     end
 
     def select(column_list = [])
-		if state?
+		if @state == 0
             args = to_array(column_list)
-			options.select = args
-        else
+			@options.select = args
+        elsif @state == 1
             set_select(column_list)
-		end    	
+		end 
+        if @state == 2
+            from_select()
+        end
     	self
     end
 
     def where(column_name, criteria)
-		if state?
+		if @state == 0
             args = to_array(column_name, criteria)
-			options.command << args
+			@options.where = []
+            @options.where << args
         else
             set_where(column_name, criteria) 
         end
@@ -198,32 +215,42 @@ class MySqliteRequest < MySqliteGetter
     end
 
     def join(column_on_db_a, filename_db_b, column_on_db_b)
-        if state?
+        if @state == 0
             args = to_array(column_on_db_a, filename_db_b, column_on_db_b)
-            options.joins = args
-        else
+            @options.join = []
+            @options.join << args
+        elsif @state == 1
             set_join(column_on_db_a, filename_db_b, column_on_db_b)
+        elsif @state == 2
+            @result = @db.get_db
         end
         self
     end
 
     def order(order, column_name)
-        if state?
+        if @state == 0
             args = to_array(order, column_name)
-            options.order = args
-        else
+            @options.order = []
+            @options.order << args
+        elsif @state == 1
             set_order(order, column_name)
+        elsif @state == 2
+            @result = @db.get_db            
         end
         self
     end
 
     def insert(table_name) 
-        if state?
-            args = to_array(table_name)
-            options.insert = args
-        else
+        if @state == 0
+            # args = to_array(table_name)
+            # @options.insert = args
+            @options.insert = table_name
+        elsif @state == 1
             @db = set_table(table_name)
-        # code is working but it's not exactly what the upskill specs requires
+        elsif @state == 2
+            @db.insert_hash(@data)
+            @result = @db.get_db
+            # code is working but it's not exactly what the upskill specs requires
             # db = @db.get_db
             # insert_db = []
             # CSV.foreach(table_name, headers: true) do |row|
@@ -243,9 +270,10 @@ class MySqliteRequest < MySqliteGetter
     end
 
     def values(data)
-        if state?
-            args = to_array(data)
-            options.values = args
+        if @state == 0
+            # args = to_array(data)
+            # @options.values = args
+            @options.values = data
         else
             @data = data
         end
@@ -253,19 +281,29 @@ class MySqliteRequest < MySqliteGetter
     end
 
     def update(table_name)
-        if state?
-            args = to_array(table_name)
-            options.updates = args
-        else
+        if @state == 0
+            # args = to_array(table_name)
+            # options.update = args
+            options.update = table_name
+        elsif @state == 1
             @db = set_table(table_name)
+        elsif @state == 2
+            if @options['set'] == nil
+                @db.update_value(@data)
+                @result = @db.get_db
+            else
+                @db.modify_column(@data, @col_ids)
+                @result = @db.get_db
+            end
         end
     self
     end
 
     def set(data)
-        if state?
-            args = to_array(data)
-            options.set = args
+        if @state == 0
+            # args = to_array(data)
+            # options.set = args
+            options.set = data
         else
             @data = data
         end
@@ -273,13 +311,31 @@ class MySqliteRequest < MySqliteGetter
     end
 
     def delete
-        if state?
+        if @state == 0
             options.delete = true
         end
         self
     end
 
     def run
+        if @state == 0
+        p    @options = object_to_hash(@options)
+            # self_execute_(@options)
+            @state = 1
+        end
+        iteration = 0
+        # while @state < 3
+        #     self_execute_(@options)
+        #     @state += 1
+        # end
+        if state == 1
+            self_execute_(@options)
+            @state = 2
+        end
+        if @state == 2
+            self_execute_(@options)
+        end
+        get_result()
         # if @insert == true
         #   @db.insert_hash(@data)
         # end
@@ -308,13 +364,13 @@ end
 require_relative 'Inverted_Index'
 require_relative 'cli'
 
-request = MySqliteRequest.new
-  request.from('data.csv').where('job', 'Engineer')
-# request = request.from('data.csv').join('last_name', 'data.csv', 'age')
-# request = request.from('data.csv').order(:asc,'job').run
+# request = MySqliteRequest.new
+#   request.from('data.csv').where('job', 'Engineer')
+    # request = request.from('data.csv').join('last_name', 'data.csv', 'age').run
+    # request = request.from('data.csv').order(:asc,'job').run
 # request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
-=begin
+# =begin
 insert_data = {
    'index' => 17,
    'first_name' => 'Peter',
@@ -324,7 +380,7 @@ insert_data = {
 }
 
 update_data = {
-   'index' => 17,
+   'index' => 15,
    'first_name' => 'Spooder',
    'last_name' => 'Man',
    'job' => 'ceiling crawler'
@@ -333,11 +389,10 @@ update_data = {
 set_data = {
     'job' => "пенсионер",
 }
-
-p "insert data"
-#request = request.insert('data.csv').values(insert_data).run
-p "update data"
-#request = request.update('data.csv').values(update_data).run
+# =end
+# p "insert data"
+# request = request.insert('data.csv').values(insert_data).run
+# p "update data"
+# request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
-=end
 
