@@ -158,6 +158,24 @@ class InvertedIndex
         id_list.map { |id| @data[id] }
     end
 
+    def get_db_at(col_ids, row_ids)
+        matrix = []
+        row_ids << '0'
+        @data.each.with_index do |elem, index|
+            if row_ids.index(index.to_s)
+                row = []
+                row = elem[1].split(',')
+                result = []
+                col_ids.each do |col_id|
+                    result << row[col_id]
+                end
+                matrix << result
+            end
+        end
+       matrix
+    end
+
+
     def get_row_id(value, column_id)
         id_list = @index[value]
         id_list.map do |id| 
