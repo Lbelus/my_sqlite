@@ -26,7 +26,7 @@ end
 module QueryMethods 
 
     def iskeyword?(str)
-        cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE']
+        cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE', 'JOIN']
         upper = str.upcase #upper case string
         return cmnds.include?(upper) 
     end
@@ -63,6 +63,8 @@ module QueryMethods
         elsif (!valid_from?(query))
             return true
         elsif (!valid_where?(query, find_keyword_idx(query, 'where')))
+            return true
+        elsif (!valid_join?(query, find_keyword_idx(query, 'join')))
             return true
         #check select
         # elsif (query[0].casecmp("select") == 0)
@@ -106,8 +108,30 @@ module QueryMethods
         count
     end
 
+
+    ##################### valid_join? ##################
+    def valid_join?(query, idx) 
+        #there is no join keyword
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) != 5
+            return false
+        elsif query[idx[0] + 2].casecmp("on") != 0
+            return false     
+        elsif query[idx[0] + 4] != '='
+            return false;
+        else
+            return true
+        end
+
+    end
+
+
+
     ##################### valid_where? ##################
     def valid_where?(query, idx)
+        #there is no where keyword
         if idx == nil
             return true
         end
