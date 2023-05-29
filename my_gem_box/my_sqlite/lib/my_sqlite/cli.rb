@@ -57,9 +57,13 @@ module QueryMethods
     # Check the correctness of the original query.
     def errors?(query)
         if (query.length() < 4)
-            return true;
+            return true
         elsif (!iskeyword?(query[0]))
-            return true;
+            return true
+        elsif (!valid_from?(query))
+            return true
+        elsif (!valid_where?(query, find_keyword_idx(query, 'where')))
+            return true
         #check select
         # elsif (query[0].casecmp("select") == 0)
         #     valid_select?(query)
@@ -102,9 +106,35 @@ module QueryMethods
         count
     end
 
+    ##################### valid_where? ##################
+    def valid_where?(query, idx)
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) < 3
+            return false
+        elsif query[idx[0] + 2] != '='
+            return false     
+        elsif (query.size() - 1 - idx[0]) > 3 && !iskeyword?(query[idx[0] + 4])
+            return false;
+        else
+            return true
+        end
+    end
+
+
+    ##################### get_where_cndt ##################
+    # @param {String[]} query. Original query split by words. 
+    # @param {Query} query_class. Query class object.
+    # Gets where condition.
     def get_where_cndt(query, query_class) 
         where_idx = find_keyword_idx(query, 'where')
-        if (!where_idx.empty?()) 
+        if where_idx == nil
+            return true
+        end
+        if (!where_idx.empty?() && where_idx[0] != 4)
+            return false
+        elsif (!where_idx.empty?()) 
             query_class.where = Array.new
             where_idx.each do |where_loc|
                 where_cndt = Array.new
@@ -115,10 +145,18 @@ module QueryMethods
                 query_class.where.push(where_cndt)        
             end
         end
+        return true
     end
     
+    ##################### get_join_cndt ##################
+    # @param {String[]} query. Original query split by words. 
+    # @param {Query} query_class. Query class object.
+    # Gets join condition.
     def get_join_cndt(query, query_class) 
-        join_idx = find_keyword_idx(query, 'join')          
+        join_idx = find_keyword_idx(query, 'join')
+        if join_idx == nil
+            return nil
+        end          
         if (!join_idx.empty?())
             join_cndt = Array.new
             join_loc = join_idx[0]
@@ -129,7 +167,6 @@ module QueryMethods
             query_class.join = join_cndt
         end
     end
-
 
     ##################### get_query ##################
     # @param {String[]} query. Original query split by words. 
@@ -155,14 +192,17 @@ module QueryMethods
             end
             count += 1
         end
-        keyword_idx
+        if keyword_idx.empty?() 
+            return nil
+        else
+            return keyword_idx
+        end
     end
 
     ##################### run_cli ##################
     def run_cli() 
-        puts "Enter the input"
-        query = get_text();
-        query = query.split(' ');
+        query = get_text()
+        query = query.split(' ')
         if !errors?(query)
             return get_query(query)
         else
@@ -174,4 +214,3 @@ end
 
 include QueryMethods
 p run_cli()
-
