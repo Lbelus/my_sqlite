@@ -85,9 +85,11 @@ module MySqliteSetter
             if self.respond_to?(method)
                 if method == "where" or method == "order" or method == "join" and argument != nil
                     self.send(method, *argument[0])
-                  elsif argument != nil
+                elsif method == "delete" and argument == true
+                    self.send(method)
+                elsif argument != nil
                     self.send(method, argument)
-                  end
+                end
             else
             p "#{method} does not belong to my_sqlite"
             end
@@ -313,6 +315,12 @@ class MySqliteRequest < MySqliteGetter
     def delete
         if @state == 0
             options.delete = true
+        elsif state == 2
+            row_ids = @row_ids.dup
+            row_ids.each do |row_id|
+                @db.delete_entry(row_id)
+            end
+            @result = @db.get_db
         end
         self
     end
@@ -364,8 +372,8 @@ end
 require_relative 'Inverted_Index'
 require_relative 'cli'
 
-# request = MySqliteRequest.new
-#   request.from('data.csv').where('job', 'Engineer')
+request = MySqliteRequest.new
+#   request.from('data.csv').where('job', 'Engineer').delete.run
     # request = request.from('data.csv').join('last_name', 'data.csv', 'age').run
     # request = request.from('data.csv').order(:asc,'job').run
 # request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
@@ -393,6 +401,6 @@ set_data = {
 # p "insert data"
 # request = request.insert('data.csv').values(insert_data).run
 # p "update data"
-# request = request.update('data.csv').values(update_data).run
+request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
 

@@ -10,6 +10,8 @@ class MySqliteInstance
             if object.respond_to?(method)
                 if method == "where" or method == "order" or method == "join" and argument != nil
                     object.send(method, *argument[0])
+                elsif method == "delete" and argument == true
+                    object.send(method)
                 elsif argument != nil
                     object.send(method, argument)
                 end     
