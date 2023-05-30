@@ -46,7 +46,7 @@ module MySqliteSetter
     end
 
     def set_where(column_name, criteria)  
-        col_id = @db.get_column_id(column_name)
+        p col_id = @db.get_column_id(column_name)
         @row_ids = @db.get_row_id(criteria, col_id)
     end
 
@@ -81,8 +81,8 @@ module MySqliteSetter
     end
 
     def set_standard_data()
-        if has_generic_key?(@data) 
-            @data = standardize_hash(@data)
+        if @db.has_generic_key?(@data) 
+            @data = @db.standardize_hash(@data)
         end
     end
 
@@ -216,7 +216,7 @@ class MySqliteRequest < MySqliteGetter
             args = to_array(column_name, criteria)
 			@options.where = []
             @options.where << args
-        else
+        elsif state == 1
             set_where(column_name, criteria) 
         end
         self
@@ -302,7 +302,7 @@ class MySqliteRequest < MySqliteGetter
                 @db.update_value(@data)
                 @result = @db.get_db
             else
-                @db.modify_column(@data, @col_ids)
+                @db.modify_column(@data, @row_ids)
                 @result = @db.get_db
             end
         end
@@ -380,9 +380,9 @@ end
 require_relative 'Inverted_Index'
 require_relative 'cli'
 
-request = MySqliteRequest.new
+# request = MySqliteRequest.new
 #   request.from('data.csv').where('job', 'Engineer').delete.run
-    # request = request.from('data.csv').join('last_name', 'data.csv', 'age').run
+    # request = request.from('data.csv').join('index', 'data.csv', 'last_name').run
     # request = request.from('data.csv').order(:asc,'job').run
 # request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
@@ -409,6 +409,6 @@ set_data = {
 # p "insert data"
 # request = request.insert('data.csv').values(insert_data).run
 # p "update data"
-request = request.update('data.csv').values(update_data).run
+# request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
 
