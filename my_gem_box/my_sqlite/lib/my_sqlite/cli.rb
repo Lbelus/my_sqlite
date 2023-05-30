@@ -26,7 +26,7 @@ end
 module QueryMethods 
 
     def iskeyword?(str)
-        cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE']
+        cmnds = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE', 'JOIN']
         upper = str.upcase #upper case string
         return cmnds.include?(upper) 
     end
@@ -45,7 +45,6 @@ module QueryMethods
             text += gets.chomp
             if text[text.length() - 1] == ';'
                 text = text.chop
-                text.gsub!(", ", ",")
                 break;
             end
             text += ' '
@@ -56,21 +55,76 @@ module QueryMethods
     ##################### errors? ################
     # Check the correctness of the original query.
     def errors?(query)
-        if (query.length() < 4)
-            return true;
-        elsif (!iskeyword?(query[0]))
-            return true;
-        #check select
-        # elsif (query[0].casecmp("select") == 0)
-        #     valid_select?(query)
+        if (query == nil || query.empty?())
+            return true
+        elsif (query[0].casecmp("select") == 0 && valid_select?(query))
+            return false
+        elsif (query[0].casecmp("update") == 0 && valid_update?(query))
+            return false
         else 
-            return false;
+            return true;
         end
     end
 
+    ##################### valid_set? ################
+    def valid_set?(query)
+        set_idx = find_keyword_idx(query, "set")
+        where_idx = find_keyword_idx(query, "where")
+        finish = query.size();
+        if where_idx != nil
+            finish = where_idx[0]
+        end
+        if set_idx == nil || set_idx.size() > 1
+            return false
+        elsif where_idx != nil && where_idx.size() > 1
+            return false
+        elsif finish < set_idx[0]
+            return false
+        #incorrect set conditions
+        elsif (finish - set_idx[0] - 1) % 3 != 0
+            puts "HERE #{((finish))}"
+            puts "HERE #{((set_idx[0]))}"
+            puts "HERE #{((finish - set_idx[0] - 1))}"
+            puts "HERE #{((finish - set_idx[0] - 1) % 3)}"
+            return false
+        end
+
+        return true
+    end
+
+    ##################### valid_update? ################
+    def valid_update?(query)
+        if query.empty?()
+            return false
+        elsif query[0].casecmp("update") != 0
+            return false
+        elsif query.length() < 4
+            return false
+        elsif query[2].casecmp("set") != 0
+            return false
+        elsif !valid_set?(query)
+            return false
+        elsif (!valid_update_where?(query, find_keyword_idx(query, 'where')))
+            return false
+        end
+        return true
+    end
+    
     ##################### valid_select? ################
     def valid_select?(query)
-
+        if (query.length() < 4)
+            return false
+        elsif (!iskeyword?(query[0]))
+            return false
+        elsif (!valid_from?(query))
+            return false
+        elsif (!valid_select_where?(query, find_keyword_idx(query, 'where')))
+            return false
+        elsif (!valid_join?(query, find_keyword_idx(query, 'join')))
+            return false
+        else 
+            return true
+        end
     end
 
 
@@ -102,8 +156,71 @@ module QueryMethods
         count
     end
 
+
+    ##################### valid_join? ##################
+    def valid_join?(query, idx) 
+        #there is no join keyword
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) != 5
+            return false
+        elsif query[idx[0] + 2].casecmp("on") != 0
+            return false     
+        elsif query[idx[0] + 4] != '='
+            return false;
+        else
+            return true
+        end
+
+    end
+
+    
+    ##################### valid_update_where? ##################
+    def valid_update_where?(query, idx)
+        #there is no where keyword
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) != 3
+            return false
+        elsif query[idx[0] + 2] != '='
+            return false     
+        else
+            return true
+        end
+    end
+
+    ##################### valid_select_where? ##################
+    def valid_select_where?(query, idx)
+        #there is no where keyword
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) < 3
+            return false
+        elsif query[idx[0] + 2] != '='
+            return false     
+        elsif (query.size() - 1 - idx[0]) > 3 && !iskeyword?(query[idx[0] + 4])
+            return false;
+        else
+            return true
+        end
+    end
+
+
+    ##################### get_where_cndt ##################
+    # @param {String[]} query. Original query split by words. 
+    # @param {Query} query_class. Query class object.
+    # Gets where condition.
     def get_where_cndt(query, query_class) 
         where_idx = find_keyword_idx(query, 'where')
+        if where_idx == nil
+            return true
+        end
+        # if (!where_idx.empty?() && where_idx[0] != 4)
+        #     return false
+        # els
         if (!where_idx.empty?()) 
             query_class.where = Array.new
             where_idx.each do |where_loc|
@@ -115,10 +232,18 @@ module QueryMethods
                 query_class.where.push(where_cndt)        
             end
         end
+        return true
     end
     
+    ##################### get_join_cndt ##################
+    # @param {String[]} query. Original query split by words. 
+    # @param {Query} query_class. Query class object.
+    # Gets join condition.
     def get_join_cndt(query, query_class) 
-        join_idx = find_keyword_idx(query, 'join')          
+        join_idx = find_keyword_idx(query, 'join')
+        if join_idx == nil
+            return nil
+        end          
         if (!join_idx.empty?())
             join_cndt = Array.new
             join_loc = join_idx[0]
@@ -130,15 +255,29 @@ module QueryMethods
         end
     end
 
-
     ##################### get_query ##################
     # @param {String[]} query. Original query split by words. 
     # @return {Query}. The object of the query class.  
     def get_query(query)
         #add columns to 'select' and table name to 'from'
-        q = Query.new(query[3], query[1].split(','));
-        get_where_cndt(query, q)
-        get_join_cndt(query, q)
+        q = Query.new();
+        if query[0].casecmp("select") == 0
+            q.select = query[1].split(',')
+            q.from = query[3];
+            get_join_cndt(query, q)
+        elsif query[0].casecmp("update") == 0
+            q.update = query[1]
+            data = {}
+            # find the start of set
+            start = find_keyword_idx(query, 'set')[0] + 1
+            finish = query.size()
+            while (start < finish && !iskeyword?(query[start]))
+                data[query[start]] = query[start + 2]
+                start += 3
+            end
+            q.set = data
+        end
+        get_where_cndt(query, q)        
         q
     end
 
@@ -155,14 +294,31 @@ module QueryMethods
             end
             count += 1
         end
-        keyword_idx
+        if keyword_idx.empty?() 
+            return nil
+        else
+            return keyword_idx
+        end
     end
 
     ##################### run_cli ##################
     def run_cli() 
-        puts "Enter the input"
-        query = get_text();
-        query = query.split(' ');
+        query = get_text()
+        if query.empty?()
+            return nil
+        end
+        keyword = query[0..5]
+        if keyword.casecmp("select") == 0
+            query.gsub!(", ", ",")
+            query.gsub!(" ,", ",")
+
+        elsif keyword.casecmp("update") == 0    
+            query.gsub!(", ", " ")
+            query.gsub!(" ,", " ")
+        else
+            return nil
+        end
+        query = query.split(' ')
         if !errors?(query)
             return get_query(query)
         else
@@ -173,5 +329,5 @@ module QueryMethods
 end
 
 include QueryMethods
-# p run_cli()  
 
+p run_cli()
