@@ -45,7 +45,6 @@ module QueryMethods
             text += gets.chomp
             if text[text.length() - 1] == ';'
                 text = text.chop
-                text.gsub!(", ", ",")
                 break;
             end
             text += ' '
@@ -56,27 +55,76 @@ module QueryMethods
     ##################### errors? ################
     # Check the correctness of the original query.
     def errors?(query)
-        if (query.length() < 4)
+        if (query == nil || query.empty?())
             return true
-        elsif (!iskeyword?(query[0]))
-            return true
-        elsif (!valid_from?(query))
-            return true
-        elsif (!valid_where?(query, find_keyword_idx(query, 'where')))
-            return true
-        elsif (!valid_join?(query, find_keyword_idx(query, 'join')))
-            return true
-        #check select
-        # elsif (query[0].casecmp("select") == 0)
-        #     valid_select?(query)
+        elsif (query[0].casecmp("select") == 0 && valid_select?(query))
+            return false
+        elsif (query[0].casecmp("update") == 0 && valid_update?(query))
+            return false
         else 
-            return false;
+            return true;
         end
     end
 
+    ##################### valid_set? ################
+    def valid_set?(query)
+        set_idx = find_keyword_idx(query, "set")
+        where_idx = find_keyword_idx(query, "where")
+        finish = query.size();
+        if where_idx != nil
+            finish = where_idx[0]
+        end
+        if set_idx == nil || set_idx.size() > 1
+            return false
+        elsif where_idx != nil && where_idx.size() > 1
+            return false
+        elsif finish < set_idx[0]
+            return false
+        #incorrect set conditions
+        elsif (finish - set_idx[0] - 1) % 3 != 0
+            puts "HERE #{((finish))}"
+            puts "HERE #{((set_idx[0]))}"
+            puts "HERE #{((finish - set_idx[0] - 1))}"
+            puts "HERE #{((finish - set_idx[0] - 1) % 3)}"
+            return false
+        end
+
+        return true
+    end
+
+    ##################### valid_update? ################
+    def valid_update?(query)
+        if query.empty?()
+            return false
+        elsif query[0].casecmp("update") != 0
+            return false
+        elsif query.length() < 4
+            return false
+        elsif query[2].casecmp("set") != 0
+            return false
+        elsif !valid_set?(query)
+            return false
+        elsif (!valid_update_where?(query, find_keyword_idx(query, 'where')))
+            return false
+        end
+        return true
+    end
+    
     ##################### valid_select? ################
     def valid_select?(query)
-
+        if (query.length() < 4)
+            return false
+        elsif (!iskeyword?(query[0]))
+            return false
+        elsif (!valid_from?(query))
+            return false
+        elsif (!valid_select_where?(query, find_keyword_idx(query, 'where')))
+            return false
+        elsif (!valid_join?(query, find_keyword_idx(query, 'join')))
+            return false
+        else 
+            return true
+        end
     end
 
 
@@ -127,10 +175,24 @@ module QueryMethods
 
     end
 
+    
+    ##################### valid_update_where? ##################
+    def valid_update_where?(query, idx)
+        #there is no where keyword
+        if idx == nil
+            return true
+        end
+        if (query.size() - 1 - idx[0]) != 3
+            return false
+        elsif query[idx[0] + 2] != '='
+            return false     
+        else
+            return true
+        end
+    end
 
-
-    ##################### valid_where? ##################
-    def valid_where?(query, idx)
+    ##################### valid_select_where? ##################
+    def valid_select_where?(query, idx)
         #there is no where keyword
         if idx == nil
             return true
@@ -156,9 +218,10 @@ module QueryMethods
         if where_idx == nil
             return true
         end
-        if (!where_idx.empty?() && where_idx[0] != 4)
-            return false
-        elsif (!where_idx.empty?()) 
+        # if (!where_idx.empty?() && where_idx[0] != 4)
+        #     return false
+        # els
+        if (!where_idx.empty?()) 
             query_class.where = Array.new
             where_idx.each do |where_loc|
                 where_cndt = Array.new
@@ -197,9 +260,24 @@ module QueryMethods
     # @return {Query}. The object of the query class.  
     def get_query(query)
         #add columns to 'select' and table name to 'from'
-        q = Query.new(query[1].split(','), query[3]);
-        get_where_cndt(query, q)
-        get_join_cndt(query, q)
+        q = Query.new();
+        if query[0].casecmp("select") == 0
+            q.select = query[1].split(',')
+            q.from = query[3];
+            get_join_cndt(query, q)
+        elsif query[0].casecmp("update") == 0
+            q.update = query[1]
+            data = {}
+            # find the start of set
+            start = find_keyword_idx(query, 'set')[0] + 1
+            finish = query.size()
+            while (start < finish && !iskeyword?(query[start]))
+                data[query[start]] = query[start + 2]
+                start += 3
+            end
+            q.set = data
+        end
+        get_where_cndt(query, q)        
         q
     end
 
@@ -226,6 +304,20 @@ module QueryMethods
     ##################### run_cli ##################
     def run_cli() 
         query = get_text()
+        if query.empty?()
+            return nil
+        end
+        keyword = query[0..5]
+        if keyword.casecmp("select") == 0
+            query.gsub!(", ", ",")
+            query.gsub!(" ,", ",")
+
+        elsif keyword.casecmp("update") == 0    
+            query.gsub!(", ", " ")
+            query.gsub!(" ,", " ")
+        else
+            return nil
+        end
         query = query.split(' ')
         if !errors?(query)
             return get_query(query)
