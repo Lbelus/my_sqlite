@@ -85,25 +85,37 @@ class InvertedIndex
         insert_hash(new_data, id)
     end
 
+
+    def has_generic_key?(hash)
+        array = hash.keys
+        array.any? { |string| string.include? "generic_header" }
+    end
+
+    def standardize_hash(old_hash)
+        headers = @data['0'].split(',')
+        headers_enum = headers.to_enum
+        new_hash = old_hash.transform_keys { |_key| headers_enum.next }
+    end
+
     ################ create_new_data #################
     # Creates a new data entry by merging old data with the new one based on headers
     # @return {Hash}
     def create_new_data(data, id)
-      headers = @data['0'].split(',')
-      old_data = @data[id].split(',')
-      new_data = {}
-      new_headers = data.keys
-      new_values = data.values
-      jndex = 0
-      headers.each.with_index do |header, index|
-        if header == new_headers[jndex]
-          new_data[header] = new_values[jndex]
-          jndex += 1
-        else
-        new_data[header] = old_data[index]
+        headers = @data['0'].split(',')
+        old_data = @data[id].split(',')
+        new_data = {}
+        new_headers = data.keys
+        new_values = data.values
+        jndex = 0
+        headers.each.with_index do |header, index|
+            if header == new_headers[jndex]
+                new_data[header] = new_values[jndex]
+                jndex += 1
+            else
+                new_data[header] = old_data[index]
+            end
         end
-      end
-      new_data
+        new_data
     end
 
      ################ update_value #################
@@ -113,7 +125,8 @@ class InvertedIndex
         values = data.values
         id = values[0].to_s
         if key_exist?(id)
-          modify_entry(data, id)
+            new_data = create_new_data(data, id)
+            modify_entry(new_data, id)
         end
     end
 
@@ -157,6 +170,24 @@ class InvertedIndex
         return [] unless id_list
         id_list.map { |id| @data[id] }
     end
+
+    def get_db_at(col_ids, row_ids)
+        matrix = []
+        row_ids << '0'
+        @data.each.with_index do |elem, index|
+            if row_ids.index(index.to_s)
+                row = []
+                row = elem[1].split(',')
+                result = []
+                col_ids.each do |col_id|
+                    result << row[col_id]
+                end
+                matrix << result
+            end
+        end
+       matrix
+    end
+
 
     def get_row_id(value, column_id)
         id_list = @index[value]

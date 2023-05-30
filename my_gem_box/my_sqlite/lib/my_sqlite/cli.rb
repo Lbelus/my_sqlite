@@ -6,17 +6,17 @@ class Query
     # @param {String} table
     # @param {String[][]} where
     # @param {String[][]} join
-    attr_accessor :select, :from, :where, :join, :order, :insert, :values, :update, :set, :delete    
-    
-    def initialize(select = nil, from = nil, where = nil, join = nil, order = nil, insert = nil, values = nil, update = nil, set = nil, delete = nil)
-        @select = select
+    attr_accessor :from, :select, :where, :join, :order, :insert, :values, :update, :set, :delete    
+
+    def initialize(from = nil, select = nil, where = nil, join = nil, order = nil, insert = nil, values = nil, update = nil, set = nil, delete = nil)
+        @update = update
+        @insert = insert
         @from = from
+        @select = select
         @where = where
         @join = join
         @order = order 
-        @insert = insert 
         @values = values
-        @update = update 
         @set = set
         @delete = delete
     end
@@ -329,4 +329,5 @@ module QueryMethods
 end
 
 include QueryMethods
+
 p run_cli()
