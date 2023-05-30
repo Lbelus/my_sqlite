@@ -80,6 +80,12 @@ module MySqliteSetter
         @db = set_table(db_csv, false)
     end
 
+    def set_standard_data()
+        if has_generic_key?(@data) 
+            @data = standardize_hash(@data)
+        end
+    end
+
     def self_execute_(hash)
         hash.each do |method, argument|
             if self.respond_to?(method)
@@ -250,6 +256,7 @@ class MySqliteRequest < MySqliteGetter
         elsif @state == 1
             @db = set_table(table_name)
         elsif @state == 2
+            set_standard_data()
             @db.insert_hash(@data)
             @result = @db.get_db
             # code is working but it's not exactly what the upskill specs requires
@@ -291,6 +298,7 @@ class MySqliteRequest < MySqliteGetter
             @db = set_table(table_name)
         elsif @state == 2
             if @options['set'] == nil
+                set_standard_data()
                 @db.update_value(@data)
                 @result = @db.get_db
             else

@@ -85,6 +85,18 @@ class InvertedIndex
         insert_hash(new_data, id)
     end
 
+
+    def has_generic_key?(hash)
+        array = hash.keys
+        array.any? { |string| string.include? "generic_header" }
+    end
+
+    def standardize_hash(old_hash)
+        headers = @data['0'].split(',')
+        headers_enum = headers.to_enum
+        new_hash = old_hash.transform_keys { |_key| headers_enum.next }
+    end
+
     ################ create_new_data #################
     # Creates a new data entry by merging old data with the new one based on headers
     # @return {Hash}
