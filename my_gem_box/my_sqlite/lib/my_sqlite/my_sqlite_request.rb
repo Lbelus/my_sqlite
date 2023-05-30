@@ -80,14 +80,22 @@ module MySqliteSetter
         @db = set_table(db_csv, false)
     end
 
+    def set_standard_data()
+        if has_generic_key?(@data) 
+            @data = standardize_hash(@data)
+        end
+    end
+
     def self_execute_(hash)
         hash.each do |method, argument|
             if self.respond_to?(method)
                 if method == "where" or method == "order" or method == "join" and argument != nil
                     self.send(method, *argument[0])
-                  elsif argument != nil
+                elsif method == "delete" and argument == true
+                    self.send(method)
+                elsif argument != nil
                     self.send(method, argument)
-                  end
+                end
             else
             p "#{method} does not belong to my_sqlite"
             end
@@ -248,6 +256,7 @@ class MySqliteRequest < MySqliteGetter
         elsif @state == 1
             @db = set_table(table_name)
         elsif @state == 2
+            set_standard_data()
             @db.insert_hash(@data)
             @result = @db.get_db
             # code is working but it's not exactly what the upskill specs requires
@@ -289,6 +298,7 @@ class MySqliteRequest < MySqliteGetter
             @db = set_table(table_name)
         elsif @state == 2
             if @options['set'] == nil
+                set_standard_data()
                 @db.update_value(@data)
                 @result = @db.get_db
             else
@@ -313,6 +323,12 @@ class MySqliteRequest < MySqliteGetter
     def delete
         if @state == 0
             options.delete = true
+        elsif state == 2
+            row_ids = @row_ids.dup
+            row_ids.each do |row_id|
+                @db.delete_entry(row_id)
+            end
+            @result = @db.get_db
         end
         self
     end
@@ -364,8 +380,8 @@ end
 require_relative 'Inverted_Index'
 require_relative 'cli'
 
-# request = MySqliteRequest.new
-#   request.from('data.csv').where('job', 'Engineer')
+request = MySqliteRequest.new
+#   request.from('data.csv').where('job', 'Engineer').delete.run
     # request = request.from('data.csv').join('last_name', 'data.csv', 'age').run
     # request = request.from('data.csv').order(:asc,'job').run
 # request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
@@ -393,6 +409,6 @@ set_data = {
 # p "insert data"
 # request = request.insert('data.csv').values(insert_data).run
 # p "update data"
-# request = request.update('data.csv').values(update_data).run
+request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
 
