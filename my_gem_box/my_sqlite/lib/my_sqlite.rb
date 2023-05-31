@@ -1,11 +1,13 @@
+#!/usr/bin/env ruby
+
 require_relative 'my_sqlite/cli'
 
 class MySqliteInstance
     include QueryMethods
-
+    
     def _execute_(object, hash)
-        object
-        p hash
+        # object
+        # p hash
         hash.each do |method, argument|
             if object.respond_to?(method)
                 if method == "where" or method == "order" or method == "join" and argument != nil
@@ -14,17 +16,20 @@ class MySqliteInstance
                     object.send(method)
                 elsif argument != nil
                     object.send(method, argument)
-                end     
+                end
             else
-            p "#{method} does not belong to my_sqlite"
+                p "#{method} does not belong to my_sqlite"
             end
         end
-  end
+    end
 
     def instanciation(database_name = nil)
         result = true
         while result
             result = run_cli
+            if result == nil
+                break
+            end
             request = MySqliteRequest.new(result)
             _execute_(request, request.options)
             request.state += 1
@@ -42,4 +47,4 @@ end
 require_relative 'my_sqlite/my_sqlite_request'
 #require_relative 'InvertedIndex'
 
-my_sqlite
+# my_sqlite

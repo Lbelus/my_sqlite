@@ -139,7 +139,7 @@ class InvertedIndex
             new_data = create_new_data(data, id)
             modify_entry(new_data, id)
         end
-      @index  
+      @index
     end
 
     ################ get_db #################

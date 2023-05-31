@@ -36,13 +36,19 @@ module QueryMethods
         return (upper == 'FROM')
     end
 
+
+    def __get_input__
+        result = gets.chomp
+        return result
+    end
+
     ################ get text #################
     # Gets the input from the keyboard.
     # @return {String}
     def get_text()
         text = ""
         while (1) 
-            text += gets.chomp
+            text += __get_input__
             if text[text.length() - 1] == ';'
                 text = text.chop
                 break;
