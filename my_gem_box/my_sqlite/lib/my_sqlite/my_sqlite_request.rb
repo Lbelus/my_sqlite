@@ -37,16 +37,16 @@ module MySqliteSetter
 
 	def set_from(db)
     	@db = db
-    end
-    
-    def set_select(column_list = [])
+	end
+
+	def set_select(column_list = [])
         column_list.each do |column|
     	    @col_ids << @db.get_column_id(column)
         end
-    end
+	end
 
     def set_where(column_name, criteria)  
-        p col_id = @db.get_column_id(column_name)
+        col_id = @db.get_column_id(column_name)
         @row_ids = @db.get_row_id(criteria, col_id)
     end
 
@@ -171,56 +171,56 @@ class MySqliteRequest < MySqliteGetter
 
 	attr_accessor :state
 
-    def initialize(query = nil)
-    	super
+	def initialize(query = nil)
+		super
 		if query 
-    		@options = object_to_hash(query)
-            @state = 1
+			@options = object_to_hash(query)
+			@state = 1
 		else
 			@options = Query.new
-            @state = 0 
-        end
-    end
+			@state = 0
+		end
+	end
 
 	def state?
 		!@state
 	end
-
-    def from(table_name = nil)
+	
+	def from(table_name = nil)
 		if @state == 0
-            args = to_array(table_name)
+			args = to_array(table_name)
 			@options.from = args
 			@options.from = table_name
-        elsif state == 1
-            db = set_table(table_name)
-            set_from(db)
-        end
-    	self
-    end
-
-    def select(column_list = [])
+		elsif state == 1
+			db = set_table(table_name)
+			set_from(db)
+		end
+		self
+	end
+	
+	def select(column_list = [])
 		if @state == 0
-            args = to_array(column_list)
+			args = to_array(column_list)
 			@options.select = args
-        elsif @state == 1
-            set_select(column_list)
-		end 
-        if @state == 2
-            from_select()
-        end
-    	self
-    end
-
-    def where(column_name, criteria)
+		elsif @state == 1
+			set_select(column_list)
+		end
+		if @state == 2
+			from_select()
+		end
+		self
+	end
+	
+	def where(column_name, criteria)
 		if @state == 0
-            args = to_array(column_name, criteria)
+			args = to_array(column_name, criteria)
 			@options.where = []
-            @options.where << args
-        elsif state == 1
-            set_where(column_name, criteria) 
-        end
-        self
-    end
+			@options.where << args
+		elsif state == 1
+			set_where(column_name, criteria) 
+		end
+		self
+	end
 
     def join(column_on_db_a, filename_db_b, column_on_db_b)
         if @state == 0
@@ -339,7 +339,6 @@ class MySqliteRequest < MySqliteGetter
             # self_execute_(@options)
             @state = 1
         end
-        iteration = 0
         # while @state < 3
         #     self_execute_(@options)
         #     @state += 1

@@ -7,7 +7,6 @@ update t set name = igor;
 update t set name = igor, age = 20;
 update t set name = igor, age = 20 where id = 17;
 
-
 ERRORS
 select c c2 from t;
 update t name = igor;
