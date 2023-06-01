@@ -8,7 +8,8 @@ class MySqliteInstanceTest < Minitest::Test
         test_array = [
             ["select first_name\nfrom data.csv\nwhere job = Engineer",";"],
             ["select first_name, last_name","from data.csv","where job = Engineer",";"],
-            ["select first_name,last_name\nfrom data.csv\nwhere job = Engineer",";"]
+            ["select first_name,last_name\nfrom data.csv\nwhere job = Engineer",";"],
+            ["select *\nfrom data.csv\nwhere job = Engineer",";"]
         ]
         test_array.each do |_test_|
             puts "/!\\ Testing SELECT against #{_test_}:\n\n"
