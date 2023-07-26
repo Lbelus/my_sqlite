@@ -162,6 +162,10 @@ class InvertedIndex
       id_list = @index[value]
     end
 
+    def get_header_list
+        @data['0'].split(',')
+    end
+
     ################ search #################
     # Searches for a value in the index and returns corresponding data entries
     # @return {Array}
@@ -188,7 +192,6 @@ class InvertedIndex
        matrix
     end
 
-
     def get_row_id(value, column_id)
         id_list = @index[value]
         id_list.map do |id| 
@@ -199,6 +202,7 @@ class InvertedIndex
         end
         id_list
     end
+
     ################ from_to #################
     # Retrieves a submatrix of data entries between given column indices
     # @return {Array}

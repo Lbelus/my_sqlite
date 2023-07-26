@@ -40,6 +40,9 @@ module MySqliteSetter
 	end
 
 	def set_select(column_list = [])
+        if column_list.index('*') != nil
+            column_list = @db.get_header_list()
+        end
         column_list.each do |column|
     	    @col_ids << @db.get_column_id(column)
         end
@@ -180,10 +183,6 @@ class MySqliteRequest < MySqliteGetter
 			@options = Query.new
 			@state = 0
 		end
-	end
-
-	def state?
-		!@state
 	end
 	
 	def from(table_name = nil)
@@ -375,35 +374,36 @@ class MySqliteRequest < MySqliteGetter
 
 end
 
-
 require_relative 'Inverted_Index'
 require_relative 'cli'
 
 # request = MySqliteRequest.new
+
 #   request.from('data.csv').where('job', 'Engineer').delete.run
     # request = request.from('data.csv').join('index', 'data.csv', 'last_name').run
     # request = request.from('data.csv').order(:asc,'job').run
-# request = request.from('data.csv').select('first_name').where('job', 'Engineer').run
+# request = request.select('first_name').from('data.csv').where('job', 'Engineer').run
+# request = request.select('*').from('data.csv').where('job', 'Engineer').run
 # request = request.join('last_name', 'data.csv', 'age')
 # =begin
-insert_data = {
-   'index' => 17,
-   'first_name' => 'Peter',
-   'last_name' => 'Parker',
-   'job' => 'Photographer',
-   'age' => 23
-}
+# insert_data = {
+#    'index' => 17,
+#    'first_name' => 'Peter',
+#    'last_name' => 'Parker',
+#    'job' => 'Photographer',
+#    'age' => 23
+# }
 
-update_data = {
-   'index' => 15,
-   'first_name' => 'Spooder',
-   'last_name' => 'Man',
-   'job' => 'ceiling crawler'
-}
+# update_data = {
+#    'index' => 15,
+#    'first_name' => 'Spooder',
+#    'last_name' => 'Man',
+#    'job' => 'ceiling crawler'
+# }
 
-set_data = {
-    'job' => "пенсионер",
-}
+# set_data = {
+#     'job' => "пенсионер",
+# }
 # =end
 # p "insert data"
 # request = request.insert('data.csv').values(insert_data).run
