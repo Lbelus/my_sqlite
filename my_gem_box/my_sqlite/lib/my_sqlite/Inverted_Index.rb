@@ -51,10 +51,15 @@ class InvertedIndex
     # Returns the index of a column in the data set
     # @return {Integer}
     def get_column_id(value)
-        column_lists = @data['0'].split(',')
-        col_id = column_lists.index(value)
+        column_list = @data['0'].split(',')
+        col_id = column_list.index(value)
     end
-
+    
+    def get_column_range_id
+        column_list = @data['0'].split(',')
+        max = column_list.length - 1
+        id_list = (0..max).to_a
+    end
     ################ key_exist? #################
     # Checks if a key exists in the data hash
     # @return {Boolean}

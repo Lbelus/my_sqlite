@@ -40,8 +40,12 @@ module MySqliteSetter
 	end
 
 	def set_select(column_list = [])
-        column_list.each do |column|
-    	    @col_ids << @db.get_column_id(column)
+        if column_list[0] == "*"
+            @col_ids = @db.get_column_range_id
+        else
+            column_list.each do |column|
+    	        @col_ids << @db.get_column_id(column)
+            end
         end
 	end
 
