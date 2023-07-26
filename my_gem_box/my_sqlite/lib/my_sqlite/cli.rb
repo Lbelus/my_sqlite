@@ -395,6 +395,6 @@ module QueryMethods
 
 end
 
-include QueryMethods
+# include QueryMethods
 
-p run_cli()
+# p run_cli()
