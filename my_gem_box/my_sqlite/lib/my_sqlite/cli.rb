@@ -69,6 +69,8 @@ module QueryMethods
             return false
         elsif (query[0].casecmp("delete") == 0 && valid_delete?(query))
             return false
+        elsif (query[0].casecmp("insert") == 0 && valid_insert?(query))
+            return false
         else 
             return true;
         end
@@ -128,6 +130,24 @@ module QueryMethods
             return false
         elsif (!valid_update_delete_where?(query, find_keyword_idx(query, 'where')))
             return false
+        end
+        return true
+    end
+    
+    ##################### valid_insert? ################
+    def valid_insert?(query)
+        if query.empty?()
+            return false
+        elsif query.length < 5
+        elsif query[0].casecmp("insert") != 0
+            return false
+        elsif query[1].casecmp("into") != 0
+            return false
+        elsif query[3].casecmp("values") != 0 &&
+              query[4].casecmp("values") != 0  
+            return false
+        # TODO 
+        # check that the number of columns matche the number of values
         end
         return true
     end
@@ -300,7 +320,28 @@ module QueryMethods
             q.set = data
         elsif query[0].casecmp("delete") == 0
             q.delete = true
-            q.from = query[2];
+            q.from = query[2]
+        elsif query[0].casecmp("insert") == 0
+            q.insert = query[2]
+            data = {}
+            vals = Array[]
+            keys = Array[]
+            has_values = 0
+            if (query[3].casecmp("values") != 0) 
+                keys = query[3].split(',')
+                has_values = 1
+            end
+                 
+            vals = query[query.length - 1].split(',')
+            vals.length.times do |i|
+                if (has_values == 0)
+                    key = "generic_header_" + (i + 1).to_s
+                    data[key] = vals[i]
+                else
+                    data[keys[i]] = vals[i]
+                end
+            end
+            q.values = data
         end
         get_where_cndt(query, q) 
         q       
@@ -333,15 +374,14 @@ module QueryMethods
             return nil
         end
         keyword = query[0..5] #extract first six chars
-        if keyword.casecmp("select") == 0
-            query.gsub!(", ", ",")
-            query.gsub!(" ,", ",")
-        elsif keyword.casecmp("update") == 0    
-            query.gsub!(", ", " ")
-            query.gsub!(" ,", " ")
-        elsif keyword.casecmp("delete") == 0
-            query.gsub!(", ", " ")
-            query.gsub!(" ,", " ")
+        if  (keyword.casecmp("select") == 0 ||
+            keyword.casecmp("update") == 0 ||
+            keyword.casecmp("delete") == 0 ||
+            keyword.casecmp("insert") == 0)
+                query.gsub!(", ", ",")
+                query.gsub!(" ,", ",")
+                query.gsub!("(", " ")
+                query.gsub!(")", " ")
         else
             return nil
         end
