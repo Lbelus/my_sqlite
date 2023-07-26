@@ -321,7 +321,7 @@ class MySqliteRequest < MySqliteGetter
 
     def delete
         if @state == 0
-            options.delete = true
+            @options.delete = true
         elsif state == 2
             row_ids = @row_ids.dup
             row_ids.each do |row_id|
@@ -410,4 +410,3 @@ require_relative 'cli'
 # p "update data"
 # request = request.update('data.csv').values(update_data).run
 #  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
-

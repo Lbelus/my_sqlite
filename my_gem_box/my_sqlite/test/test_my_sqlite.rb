@@ -37,6 +37,38 @@ class MySqliteInstanceTest < Minitest::Test
     # assert_equal 'stubbed value', result
     end
 
+    def test_cli_delete
+        test_array = [
+            ["delete","from data.csv","where job = Engineer",";"]
+        ]
+        test_array.each do |_test_|
+            puts "/!\\ Testing DELETE against #{_test_}:\n\n"
+            MySqliteInstance.any_instance.stubs(:__get_input__).returns(*_test_)
+            sqlite_instance = MySqliteInstance.new
+            result = sqlite_instance.instanciation
+            puts "\n\n"
+        end
+    # assert_equal 'stubbed value', result
+    end
+
+    
+
+
+    def test_cli_insert
+        test_array = [
+            ["insert into data.csv","VALUES 16, 'Spooder', 'Man', 'ceiling_crawler', 23",";"],
+            ["insert into data.csv","VALUES 16, 'Spooder', 'Man', 'ceiling crawler', 23",";"]
+        ]
+        test_array.each do |_test_|
+            puts "/!\\ Testing INSERT against #{_test_}:\n\n"
+            MySqliteInstance.any_instance.stubs(:__get_input__).returns(*_test_)
+            sqlite_instance = MySqliteInstance.new
+            result = sqlite_instance.instanciation
+            puts "\n\n"
+        end
+    # assert_equal 'stubbed value', result
+    end
+
     def test_cli_error
         test_array = [
             ["select error_col","from data.csv",";"],
