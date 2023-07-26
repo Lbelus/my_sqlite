@@ -382,6 +382,7 @@ module QueryMethods
                 query.gsub!(" ,", ",")
                 query.gsub!("(", " ")
                 query.gsub!(")", " ")
+                query.gsub!("\\n", " ")
         else
             return nil
         end
