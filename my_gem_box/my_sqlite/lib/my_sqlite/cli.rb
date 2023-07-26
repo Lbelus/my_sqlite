@@ -50,7 +50,7 @@ module QueryMethods
         while (1) 
             text += __get_input__
             if text[text.length() - 1] == ';'
-                text = text.chop
+                text = text.chop #removes the last char
                 break;
             end
             text += ' '
@@ -66,6 +66,8 @@ module QueryMethods
         elsif (query[0].casecmp("select") == 0 && valid_select?(query))
             return false
         elsif (query[0].casecmp("update") == 0 && valid_update?(query))
+            return false
+        elsif (query[0].casecmp("delete") == 0 && valid_delete?(query))
             return false
         else 
             return true;
@@ -110,7 +112,21 @@ module QueryMethods
             return false
         elsif !valid_set?(query)
             return false
-        elsif (!valid_update_where?(query, find_keyword_idx(query, 'where')))
+        elsif (!valid_update_delete_where?(query, find_keyword_idx(query, 'where')))
+            return false
+        end
+        return true
+    end
+    
+    ##################### valid_delete? ################
+    def valid_delete?(query)
+        if query.empty?()
+            return false
+        elsif query[0].casecmp("delete") != 0
+            return false
+        elsif query[1].casecmp("from") != 0
+            return false
+        elsif (!valid_update_delete_where?(query, find_keyword_idx(query, 'where')))
             return false
         end
         return true
@@ -182,8 +198,8 @@ module QueryMethods
     end
 
     
-    ##################### valid_update_where? ##################
-    def valid_update_where?(query, idx)
+    ##################### valid_update_delete_where? ##################
+    def valid_update_delete_where?(query, idx)
         #there is no where keyword
         if idx == nil
             return true
@@ -282,9 +298,12 @@ module QueryMethods
                 start += 3
             end
             q.set = data
+        elsif query[0].casecmp("delete") == 0
+            q.delete = true
+            q.from = query[2];
         end
-        get_where_cndt(query, q)        
-        q
+        get_where_cndt(query, q) 
+        q       
     end
 
     ##################### find_where_idx ##################
@@ -313,12 +332,14 @@ module QueryMethods
         if query.empty?()
             return nil
         end
-        keyword = query[0..5]
+        keyword = query[0..5] #extract first six chars
         if keyword.casecmp("select") == 0
             query.gsub!(", ", ",")
             query.gsub!(" ,", ",")
-
         elsif keyword.casecmp("update") == 0    
+            query.gsub!(", ", " ")
+            query.gsub!(" ,", " ")
+        elsif keyword.casecmp("delete") == 0
             query.gsub!(", ", " ")
             query.gsub!(" ,", " ")
         else
@@ -334,6 +355,6 @@ module QueryMethods
 
 end
 
-# include QueryMethods
+include QueryMethods
 
-# p run_cli()
+p run_cli()
