@@ -387,7 +387,7 @@ module QueryMethods
             return nil
         end
         words = split_string_by_words(query)
-        p words
+        # p words
         if !errors?(words)
             return get_query(words)
         else
@@ -417,11 +417,11 @@ def split_string_by_words(str)
     words
   end
   
-include QueryMethods
+# include QueryMethods
 # test = 'hello\ "hello buy"'
 # j = test.split(' ')
 # regex = /"([^"]*#{Regexp.escape(' ')}[^"]*)"/
 # match_data = test.match(regex)
 # p !match_data.nil?
 # check_space("Hello")
- p run_cli()
+#  p run_cli()
