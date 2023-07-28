@@ -6,9 +6,9 @@ class Query
     # @param {String} table
     # @param {String[][]} where
     # @param {String[][]} join
-    attr_accessor :from, :select, :where, :join, :order, :insert, :values, :update, :set, :delete    
+    attr_accessor :from, :select, :where, :join, :order, :insert, :values, :update, :set, :delete, :quit    
 
-    def initialize(from = nil, select = nil, where = nil, join = nil, order = nil, insert = nil, values = nil, update = nil, set = nil, delete = nil)
+    def initialize(from = nil, select = nil, where = nil, join = nil, order = nil, insert = nil, values = nil, update = nil, set = nil, delete = nil, quit = nil)
         @update = update
         @insert = insert
         @from = from
@@ -373,6 +373,13 @@ module QueryMethods
         if query.empty?()
             return nil
         end
+        q_no_left_spaces = query.lstrip
+        q_no_l_r_spaces = q_no_left_spaces.rstrip
+        if q_no_l_r_spaces.casecmp("quit") == 0 
+            q = Query.new();
+            q.quit = true;
+            return q
+        end
         keyword = query[0..5] #extract first six chars
         if  (keyword.casecmp("select") == 0 ||
             keyword.casecmp("update") == 0 ||
@@ -418,10 +425,5 @@ def split_string_by_words(str)
   end
   
 # include QueryMethods
-# test = 'hello\ "hello buy"'
-# j = test.split(' ')
-# regex = /"([^"]*#{Regexp.escape(' ')}[^"]*)"/
-# match_data = test.match(regex)
-# p !match_data.nil?
-# check_space("Hello")
-#  p run_cli()
+
+# p run_cli()
