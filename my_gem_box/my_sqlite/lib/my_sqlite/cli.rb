@@ -386,9 +386,10 @@ module QueryMethods
         else
             return nil
         end
-        query = query.split(' ')
-        if !errors?(query)
-            return get_query(query)
+        words = split_string_by_words(query)
+        p words
+        if !errors?(words)
+            return get_query(words)
         else
             return nil
         end
@@ -396,6 +397,31 @@ module QueryMethods
 
 end
 
-# include QueryMethods
-
-# p run_cli()
+def split_string_by_words(str)
+    words = []
+    word = ""
+    inside_quotes = false
+  
+    str.each_char do |char|
+      if char == ' ' && !inside_quotes
+        words << word unless word.empty?
+        word = ""
+      elsif char == '"' || char == '\''
+        inside_quotes = !inside_quotes
+      else
+        word << char
+      end
+    end
+  
+    words << word unless word.empty?
+    words
+  end
+  
+include QueryMethods
+# test = 'hello\ "hello buy"'
+# j = test.split(' ')
+# regex = /"([^"]*#{Regexp.escape(' ')}[^"]*)"/
+# match_data = test.match(regex)
+# p !match_data.nil?
+# check_space("Hello")
+ p run_cli()
