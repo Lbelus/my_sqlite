@@ -45,6 +45,6 @@ def my_sqlite(database_name = nil)
 end
 
 require_relative 'my_sqlite/my_sqlite_request'
-#require_relative 'InvertedIndex'
+require_relative 'my_sqlite/Inverted_Index'
 
-# my_sqlite
+my_sqlite
