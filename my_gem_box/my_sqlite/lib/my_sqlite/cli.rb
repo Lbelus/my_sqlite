@@ -372,10 +372,6 @@ module QueryMethods
     ##################### run_cli ##################
     def run_cli() 
         query = get_text()
-        p "----- #{query}" 
-        # q_no_left_spaces = query.lstrip
-        # q_no_l_r_spaces = q_no_left_spaces.rstrip
-        # p "+++++ #{q_no_l_r_spaces}" 
         if query.casecmp("quit") == 0 
             q = Query.new();
             q.quit = true;
@@ -392,7 +388,6 @@ module QueryMethods
                 query.gsub!(")", " ")
                 query.gsub!("\\n", " ")
         else
-            p "here 2"
             return nil
         end
         words = split_string_by_words(query)
