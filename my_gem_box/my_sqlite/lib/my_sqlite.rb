@@ -14,6 +14,8 @@ class MySqliteInstance
                     object.send(method, *argument[0])
                 elsif method == "delete" and argument == true
                     object.send(method)
+                elsif method == "quit" and argument == true
+                    return object.send(method)
                 elsif argument != nil
                     object.send(method, argument)
                 end
@@ -21,6 +23,7 @@ class MySqliteInstance
                 p "#{method} does not belong to my_sqlite"
             end
         end
+        true
     end
 
     def instanciation(database_name = nil)
@@ -28,12 +31,15 @@ class MySqliteInstance
         while result
             result = run_cli
             if result == nil
-                break
+                result = true
+                next
             end
             request = MySqliteRequest.new(result)
-            _execute_(request, request.options)
-            request.state += 1
-            request.run
+            result = _execute_(request, request.options)
+            if result != false
+                request.state += 1
+                request.run
+            end
         end
     end
 
@@ -45,6 +51,6 @@ def my_sqlite(database_name = nil)
 end
 
 require_relative 'my_sqlite/my_sqlite_request'
-#require_relative 'InvertedIndex'
+# require_relative 'InvertedIndex'
 
 # my_sqlite

@@ -96,6 +96,8 @@ module MySqliteSetter
                     self.send(method, *argument[0])
                 elsif method == "delete" and argument == true
                     self.send(method)
+                elsif method == "quit" and argument == true
+                    break
                 elsif argument != nil
                     self.send(method, argument)
                 end
@@ -135,7 +137,7 @@ module MySqliteSetter
         db.insert("0", headers.join(','))
         CSV.foreach(table_name, headers: true) do |row|
             id = row['index']
-            text = row.to_s
+            text = row.to_s.chomp
             db.insert(id, text)
         end
         db
@@ -151,7 +153,7 @@ module MySqliteSetter
         db.insert("0", headers.join(','))
         CSV.parse(table_name, headers: true) do |row|
             id = row['index']
-            text = row.to_s
+            text = row.to_s.chomp
             db.insert(id, text)
         end
         db
@@ -184,7 +186,7 @@ class MySqliteRequest < MySqliteGetter
 			@state = 0
 		end
 	end
-	
+
 	def from(table_name = nil)
 		if @state == 0
 			args = to_array(table_name)
@@ -196,7 +198,7 @@ class MySqliteRequest < MySqliteGetter
 		end
 		self
 	end
-	
+
 	def select(column_list = [])
 		if @state == 0
 			args = to_array(column_list)
@@ -209,13 +211,15 @@ class MySqliteRequest < MySqliteGetter
 		end
 		self
 	end
-	
+
 	def where(column_name, criteria)
 		if @state == 0
 			args = to_array(column_name, criteria)
 			@options.where = []
 			@options.where << args
 		elsif state == 1
+            p column_name
+            p criteria
 			set_where(column_name, criteria) 
 		end
 		self
@@ -249,8 +253,6 @@ class MySqliteRequest < MySqliteGetter
 
     def insert(table_name) 
         if @state == 0
-            # args = to_array(table_name)
-            # @options.insert = args
             @options.insert = table_name
         elsif @state == 1
             @db = set_table(table_name)
@@ -258,29 +260,12 @@ class MySqliteRequest < MySqliteGetter
             set_standard_data()
             @db.insert_hash(@data)
             @result = @db.get_db
-            # code is working but it's not exactly what the upskill specs requires
-            # db = @db.get_db
-            # insert_db = []
-            # CSV.foreach(table_name, headers: true) do |row|
-            #     id = row['index']
-            #     text = row.to_s.split(',')
-            #     insert_db << text
-            # end
-            # insert_db.shift
-            # insert_db.each do |elem|
-            #     db << elem
-            # end
-            # db_csv = convert_to_csv(db)
-            # @db = set_table(db_csv, false)
-            # @insert = false
         end
         self
     end
 
     def values(data)
         if @state == 0
-            # args = to_array(data)
-            # @options.values = args
             @options.values = data
         else
             @data = data
@@ -290,8 +275,6 @@ class MySqliteRequest < MySqliteGetter
 
     def update(table_name)
         if @state == 0
-            # args = to_array(table_name)
-            # options.update = args
             options.update = table_name
         elsif @state == 1
             @db = set_table(table_name)
@@ -310,9 +293,7 @@ class MySqliteRequest < MySqliteGetter
 
     def set(data)
         if @state == 0
-            # args = to_array(data)
-            # options.set = args
-            options.set = data
+            @options.set = data
         else
             @data = data
         end
@@ -321,7 +302,7 @@ class MySqliteRequest < MySqliteGetter
 
     def delete
         if @state == 0
-            options.delete = true
+            @options.delete = true
         elsif state == 2
             row_ids = @row_ids.dup
             row_ids.each do |row_id|
@@ -332,43 +313,21 @@ class MySqliteRequest < MySqliteGetter
         self
     end
 
+    def quit
+        false
+    end
+
     def run
         if @state == 0
-        p    @options = object_to_hash(@options)
-            # self_execute_(@options)
+            @options = object_to_hash(@options)
             @state = 1
         end
-        # while @state < 3
-        #     self_execute_(@options)
-        #     @state += 1
-        # end
-        if state == 1
+        while @state < 3
             self_execute_(@options)
-            @state = 2
-        end
-        if @state == 2
-            self_execute_(@options)
+            @state += 1
         end
         get_result()
-        # if @insert == true
-        #   @db.insert_hash(@data)
-        # end
-        # if @values == true 
-        #   @db.update_value(@data)
-        # end
-        # if @set == true
-        #   p @db
-        #   id_list = @db.get_id_list(@searched_value)
-        #   @db.modify_column(@data, id_list)
-        # end
-        # if @select == true 
-        #     @db.each do |elem|
-        #       elem.split(',')[@col_id]
-        #     end
-        # else 
-        #   p @db
-        # end
-        # p "sanity check : #{@db.inspect}"
+        initialize        
     self
     end
 
@@ -376,38 +335,3 @@ end
 
 require_relative 'Inverted_Index'
 require_relative 'cli'
-
-# request = MySqliteRequest.new
-
-#   request.from('data.csv').where('job', 'Engineer').delete.run
-    # request = request.from('data.csv').join('index', 'data.csv', 'last_name').run
-    # request = request.from('data.csv').order(:asc,'job').run
-# request = request.select('first_name').from('data.csv').where('job', 'Engineer').run
-# request = request.select('*').from('data.csv').where('job', 'Engineer').run
-# request = request.join('last_name', 'data.csv', 'age')
-# =begin
-# insert_data = {
-#    'index' => 17,
-#    'first_name' => 'Peter',
-#    'last_name' => 'Parker',
-#    'job' => 'Photographer',
-#    'age' => 23
-# }
-
-# update_data = {
-#    'index' => 15,
-#    'first_name' => 'Spooder',
-#    'last_name' => 'Man',
-#    'job' => 'ceiling crawler'
-# }
-
-# set_data = {
-#     'job' => "пенсионер",
-# }
-# =end
-# p "insert data"
-# request = request.insert('data.csv').values(insert_data).run
-# p "update data"
-# request = request.update('data.csv').values(update_data).run
-#  request = request.update('data.csv').set(set_data).where('job', 'Engineer').run
-
