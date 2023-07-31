@@ -14,10 +14,13 @@ class MySqliteGetter
     end
 
     def from_select
-        @result = @db.get_db_at(@col_ids, @row_ids)
+        @result = @db.get_db_at(@col_ids, get_where())
     end
 
     def get_where
+        if @row_ids == []
+            @row_ids = @db.get_row_range
+        end
         @row_ids
     end
 
@@ -192,7 +195,7 @@ class MySqliteRequest < MySqliteGetter
 			args = to_array(table_name)
 			@options.from = args
 			@options.from = table_name
-		elsif state == 1
+		elsif @state == 1
 			db = set_table(table_name)
 			set_from(db)
 		end
@@ -217,9 +220,7 @@ class MySqliteRequest < MySqliteGetter
 			args = to_array(column_name, criteria)
 			@options.where = []
 			@options.where << args
-		elsif state == 1
-            p column_name
-            p criteria
+		elsif @state == 1
 			set_where(column_name, criteria) 
 		end
 		self
@@ -275,7 +276,7 @@ class MySqliteRequest < MySqliteGetter
 
     def update(table_name)
         if @state == 0
-            options.update = table_name
+            @options.update = table_name
         elsif @state == 1
             @db = set_table(table_name)
         elsif @state == 2
@@ -284,7 +285,7 @@ class MySqliteRequest < MySqliteGetter
                 @db.update_value(@data)
                 @result = @db.get_db
             else
-                @db.modify_column(@data, @row_ids)
+                @db.modify_column(@data, get_where())
                 @result = @db.get_db
             end
         end
@@ -304,7 +305,7 @@ class MySqliteRequest < MySqliteGetter
         if @state == 0
             @options.delete = true
         elsif state == 2
-            row_ids = @row_ids.dup
+            row_ids = get_where().dup
             row_ids.each do |row_id|
                 @db.delete_entry(row_id)
             end
@@ -317,7 +318,9 @@ class MySqliteRequest < MySqliteGetter
         false
     end
 
+
     def run
+        # state start from 1 if CLI esle start from 0 to set methods order et and then run everyting on 2. 
         if @state == 0
             @options = object_to_hash(@options)
             @state = 1
