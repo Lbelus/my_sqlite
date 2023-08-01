@@ -136,6 +136,9 @@ class InvertedIndex
     def modify_column(data, id_list)
         new_list = id_list.dup
         new_list.each do |id|
+            if id == '0'
+                next
+            end
             new_data = create_new_data(data, id)
             modify_entry(new_data, id)
         end
@@ -153,6 +156,15 @@ class InvertedIndex
             matrix << row
         end
        matrix
+    end
+
+    def get_row_range
+        row_ids = []
+        @data.each do |elem|
+            row = elem[0]
+            row_ids << row
+        end
+        row_ids
     end
 
     ################ get_id_list #################
