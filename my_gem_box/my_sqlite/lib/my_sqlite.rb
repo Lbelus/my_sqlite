@@ -34,7 +34,6 @@ class MySqliteInstance
                 result = true
                 next
             end
-            p result;
             request = MySqliteRequest.new(result)
             result = _execute_(request, request.options)
             if result != false

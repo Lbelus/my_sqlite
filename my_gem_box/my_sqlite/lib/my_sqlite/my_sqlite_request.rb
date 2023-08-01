@@ -320,6 +320,7 @@ class MySqliteRequest < MySqliteGetter
 
 
     def run
+        if @state == 0
         # state start from 1 if CLI esle start from 0 to colect methods argument
             @options = object_to_hash(@options)
             @state = 1
